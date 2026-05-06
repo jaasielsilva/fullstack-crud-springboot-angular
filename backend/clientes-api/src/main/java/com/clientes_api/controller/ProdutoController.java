@@ -17,8 +17,10 @@ import com.clientes_api.dto.ProdutoRequestDTO;
 import com.clientes_api.dto.ProdutoResponseDTO;
 import com.clientes_api.service.ProdutoService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+@Tag(name = "Produtos", description = "Endpoints de gerenciamento de produtos")
 @RestController
 @RequestMapping("/api/produtos")
 @CrossOrigin(origins = "http://localhost:4200")
