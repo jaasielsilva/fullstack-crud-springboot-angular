@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.clientes_api.dto.ProdutoRequestDTO;
 import com.clientes_api.dto.ProdutoResponseDTO;
+import com.clientes_api.exception.ResourceNotFoundException;
 import com.clientes_api.model.Produto;
 import com.clientes_api.repository.ProdutoRepository;
 
@@ -58,6 +59,6 @@ public class ProdutoService {
 
     private Produto encontrar(Long id) {
         return produtoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado"));
     }
 }

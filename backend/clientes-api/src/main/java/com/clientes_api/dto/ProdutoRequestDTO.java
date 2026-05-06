@@ -1,5 +1,6 @@
 package com.clientes_api.dto;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,7 +15,7 @@ public class ProdutoRequestDTO {
     private String descricao;
 
     @NotNull(message = "Preço é obrigatório")
-    @Min(value = 0, message = "Preço não pode ser negativo")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Preço deve ser maior que zero")
     private Double preco;
 
     @Min(value = 0, message = "Quantidade não pode ser negativa")
