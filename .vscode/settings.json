@@ -1,0 +1,8 @@
+{
+    "java.compile.nullAnalysis.mode": "disabled",
+
+    "explorer.compactFolders": false,
+    "explorer.sortOrder": "default",
+    "workbench.tree.indent": 20,
+    "java.configuration.updateBuildConfiguration": "disabled"
+}
