@@ -17,8 +17,9 @@ import com.clientes_api.dto.ClienteRequestDTO;
 import com.clientes_api.dto.ClienteResponseDTO;
 import com.clientes_api.service.ClienteService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
+@Tag(name = "Clientes", description = "Endpoints de gerenciamento de clientes")
 @RestController
 @RequestMapping("/api/clientes")
 @CrossOrigin(origins = "http://localhost:4200")
