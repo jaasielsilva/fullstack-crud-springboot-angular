@@ -1,64 +1,79 @@
-# fullstack-crud-springboot-angular
+# LexCRM - Enterprise Management System
 
-Full stack CRUD application built with Spring Boot 4 (REST API) and Angular 17 (frontend) for managing clients and products.
+A full-stack, enterprise-grade CRM and Inventory management application built with **Spring Boot 4** (REST API) and **Angular 17** (Frontend). 
 
-## Tech Stack
+This project evolved from a simple CRUD into a "Premium Dashboard" experience, focusing heavily on modern UI/UX principles, scalability, and performance.
 
-**Backend**
-- Java 17
-- Spring Boot 4
-- Spring Data JPA
-- Spring Validation
-- MySQL
-- Lombok
+## 🚀 Tech Stack
 
-**Frontend**
-- Angular 17
-- Bootstrap 5
-- TypeScript
+**Frontend (Modernized UI)**
+- **Angular 17** (Standalone Components, Control Flow)
+- **Bootstrap 5** (Customized with CSS utility classes)
+- **Bootstrap Icons**
+- **Google Fonts** (Inter Typography)
+- **TypeScript**
 
-## Features
+**Backend (Robust API)**
+- **Java 17**
+- **Spring Boot 4**
+- **Spring Data JPA & Hibernate**
+- **Spring Validation**
+- **MySQL**
+- **Lombok**
 
-- Full CRUD for clients (name, email, phone, active status)
-- Full CRUD for products (name, description, price, quantity, active status)
-- DTO pattern separating API contract from database entities
-- Bean Validation with descriptive error messages
-- Global exception handler
-- Responsive UI with Bootstrap
+## ✨ Premium Features & UX/UI
 
-## Project Structure
+### 1. Modern Architecture & Layout
+- **Global Sidebar & Topbar:** Fixed navigation layout mimicking top-tier enterprise SaaS platforms.
+- **Responsive Grid:** Intelligent Flexbox and CSS Grid usage for seamless mobile-to-desktop transitions.
+
+### 2. Advanced User Experience (UX)
+- **Offcanvas Forms:** Forms slide in from the right edge, keeping the user in the context of the data table (100% width).
+- **Skeleton Loading:** Replaced traditional spinners with shimmering skeleton placeholders for a perceived performance boost.
+- **Custom Toast Notifications:** Elegant, non-intrusive floating notifications with animations for success/error feedback.
+- **Smart Input Masking:** Real-time phone number formatting `(XX) XXXXX-XXXX` using custom Angular logic.
+
+### 3. Backend Reliability
+- Full CRUD for Clients and Products.
+- **DTO Pattern:** Strict separation between API contracts and Database entities.
+- **Global Exception Handling:** Standardized error JSON responses intercepted globally.
+- **Bean Validation:** Clear and localized error messages.
+
+## 📂 Project Structure
 
 ```
 ├── backend/
 │   └── clientes-api/          # Spring Boot REST API
 │       └── src/main/java/com/clientes_api/
-│           ├── controller/    # REST controllers + exception handler
+│           ├── controller/    # REST controllers + Exception Handler
 │           ├── dto/           # Request and response DTOs
-│           ├── model/         # JPA entities
-│           ├── repository/    # Spring Data repositories
-│           └── service/       # Business logic
+│           ├── model/         # JPA Entities
+│           ├── repository/    # Spring Data Repositories
+│           └── service/       # Business Logic
 │
 └── frontend/
-    └── clientes-front-v2/     # Angular app
-        └── src/app/
-            ├── pages/
-            │   ├── clientes/  # Clients page (model, service, component)
-            │   └── produtos/  # Products page (model, service, component)
-            └── app.routes.ts
+    └── clientes-front-v2/     # Angular 17 App
+        └── src/
+            ├── app/
+            │   ├── pages/
+            │   │   ├── dashboard/ # Analytics & KPIs
+            │   │   ├── clientes/  # Clients Module
+            │   │   └── produtos/  # Products Module
+            │   ├── app.component.html # Global Layout (Sidebar/Topbar)
+            │   └── app.routes.ts      # Routing Configuration
+            ├── styles.css             # Global UI System (Skeletons, Toasts)
+            └── index.html             # CDN Links (Fonts & Icons)
 ```
 
-## Getting Started
+## 🛠️ Getting Started
 
 ### Prerequisites
-
 - Java 17+
 - Node.js 18+
 - MySQL
 
-### Backend
-
+### Backend Setup
 1. Configure your database in `backend/clientes-api/src/main/resources/application.properties`:
-
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/your_database
 spring.datasource.username=your_user
@@ -67,28 +82,23 @@ spring.jpa.hibernate.ddl-auto=update
 ```
 
 2. Run the API:
-
 ```bash
 cd backend/clientes-api
 ./mvnw spring-boot:run
 ```
+*API will be available at `http://localhost:8080`*
 
-API will be available at `http://localhost:8080`
-
-### Frontend
-
+### Frontend Setup
 ```bash
 cd frontend/clientes-front-v2
 npm install
 ng serve
 ```
+*App will be available at `http://localhost:4200`*
 
-App will be available at `http://localhost:4200`
-
-## API Endpoints
+## 🔌 API Endpoints
 
 ### Clients — `/api/clientes`
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/clientes` | List all clients |
@@ -98,7 +108,6 @@ App will be available at `http://localhost:4200`
 | DELETE | `/api/clientes/{id}` | Delete client |
 
 ### Products — `/api/produtos`
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/produtos` | List all products |

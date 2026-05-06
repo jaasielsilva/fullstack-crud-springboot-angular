@@ -1,102 +1,163 @@
-<div class="container py-5">
-
-  <!-- Alerta -->
-  <div *ngIf="mensagem" class="alert alert-dismissible fade show"
-       [class.alert-success]="tipoMensagem === 'success'"
-       [class.alert-danger]="tipoMensagem === 'danger'"
-       role="alert">
-    {{ mensagem }}
-    <button type="button" class="btn-close" (click)="mensagem = ''"></button>
-  </div>
-
-  <!-- Formulário -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-header">
-      <h5 class="mb-0">{{ editandoId ? 'Editar Produto' : 'Novo Produto' }}</h5>
+<div class="container-fluid dashboard-container">
+  
+  <!-- Cabeçalho da Página Compacto -->
+  <div class="d-flex align-items-end justify-content-between mb-3 border-bottom pb-2">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-box-seam fs-4 text-primary"></i>
+      <h4 class="fw-bold text-dark mb-0">Catálogo de Produtos</h4>
     </div>
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Nome <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" [(ngModel)]="form.nome" placeholder="Nome do produto">
+    <!-- Botão principal movido para o topo direito -->
+    <button class="btn btn-sm btn-primary rounded-pill fw-bold px-3 shadow-sm" (click)="abrirNovo()">
+      <i class="bi bi-plus-lg me-1"></i> Inserir
+    </button>
+  </div>
+  <!-- Toast Notification Customizado -->
+  <div class="custom-toast-container">
+    <div class="custom-toast" [class.show]="mensagem" [class.success]="tipoMensagem === 'success'" [class.danger]="tipoMensagem === 'danger'">
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi fs-4" [class.bi-check-circle-fill]="tipoMensagem === 'success'" [class.bi-exclamation-triangle-fill]="tipoMensagem === 'danger'" [class.text-success]="tipoMensagem === 'success'" [class.text-danger]="tipoMensagem === 'danger'"></i>
+        <div>
+          <h6 class="mb-0 fw-bold">{{ tipoMensagem === 'success' ? 'Sucesso!' : 'Atenção' }}</h6>
+          <small class="text-muted">{{ mensagem }}</small>
         </div>
-        <div class="col-md-6">
-          <label class="form-label">Descrição</label>
-          <input type="text" class="form-control" [(ngModel)]="form.descricao" placeholder="Descrição opcional">
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <!-- Lista de Produtos (Ocupa 100% agora) -->
+    <div class="col-12">
+      <div class="card premium-card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0 p-4 d-flex justify-content-between align-items-center">
+          <h5 class="mb-0 fw-bold text-dark">Estoque</h5>
+          <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">{{ produtos.length }} itens</span>
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Preço <span class="text-danger">*</span></label>
-          <input type="number" class="form-control" [(ngModel)]="form.preco" min="0" step="0.01" placeholder="0,00">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Quantidade</label>
-          <input type="number" class="form-control" [(ngModel)]="form.quantidade" min="0" placeholder="0">
-        </div>
-        <div class="col-md-4 d-flex align-items-end">
-          <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="ativo" [(ngModel)]="form.ativo">
-            <label class="form-check-label" for="ativo">Ativo</label>
+        
+        <div class="card-body p-0">
+          
+          <!-- SKELETON LOADING -->
+          <div *ngIf="carregando" class="p-4">
+            <div *ngFor="let i of [1,2,3,4]" class="d-flex align-items-center mb-4 pb-3 border-bottom">
+              <div class="skeleton skeleton-avatar rounded me-3" style="border-radius: 8px;"></div>
+              <div class="w-100">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-text w-25"></div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!carregando && produtos.length === 0" class="text-center py-5">
+            <div class="text-muted mb-3"><i class="bi bi-box2 fs-1"></i></div>
+            <h6 class="text-muted fw-normal">Nenhum produto cadastrado ainda.</h6>
+            <button class="btn btn-outline-primary mt-3 rounded-pill" (click)="abrirNovo()">Criar o primeiro</button>
+          </div>
+
+          <div class="table-responsive" *ngIf="!carregando && produtos.length > 0">
+            <table class="table table-hover align-middle mb-0 custom-table">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-4">Produto</th>
+                  <th>Preço & Estoque</th>
+                  <th>Status</th>
+                  <th class="text-end pe-4">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of produtos">
+                  <td class="ps-4">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="avatar bg-light text-primary fw-bold rounded d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                        <i class="bi bi-box-seam fs-5"></i>
+                      </div>
+                      <div>
+                        <h6 class="mb-0 fw-bold">{{ p.nome }}</h6>
+                        <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;" title="{{ p.descricao }}">
+                          {{ p.descricao || 'Sem descrição' }}
+                        </small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="fw-bold text-dark">{{ p.preco | currency:'BRL' }}</div>
+                    <small class="text-muted"><i class="bi bi-layers me-1"></i> {{ p.quantidade }} un.</small>
+                  </td>
+                  <td>
+                    <span class="badge rounded-pill px-3"
+                          [class.bg-success-subtle]="p.ativo" [class.text-success]="p.ativo"
+                          [class.bg-secondary-subtle]="!p.ativo" [class.text-secondary]="!p.ativo">
+                      <i class="bi me-1" [class.bi-check-circle-fill]="p.ativo" [class.bi-dash-circle-fill]="!p.ativo"></i>
+                      {{ p.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </td>
+                  <td class="text-end pe-4">
+                    <div class="btn-group shadow-sm rounded-pill">
+                      <button class="btn btn-sm btn-light text-primary border-0" (click)="editar(p)" title="Editar">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button class="btn btn-sm btn-light text-danger border-0" (click)="deletar(p.id!)" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      <div class="mt-4 d-flex gap-2">
-        <button class="btn btn-primary" (click)="salvar()">
-          {{ editandoId ? 'Atualizar' : 'Cadastrar' }}
-        </button>
-        <button *ngIf="editandoId" class="btn btn-outline-secondary" (click)="resetar()">
-          Cancelar
-        </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- OFFCANVAS BACKGROUND -->
+<div class="custom-offcanvas-backdrop" [class.show]="mostrarForm" (click)="fecharForm()"></div>
+
+<!-- OFFCANVAS FORM -->
+<div class="custom-offcanvas" [class.show]="mostrarForm">
+  <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+    <div class="d-flex align-items-center gap-2">
+      <div class="icon-circle-sm bg-primary-subtle text-primary">
+        <i class="bi" [class.bi-box-seam-fill]="!editandoId" [class.bi-pencil-square]="editandoId"></i>
+      </div>
+      <h5 class="mb-0 fw-bold text-dark">{{ editandoId ? 'Editar Produto' : 'Novo Produto' }}</h5>
+    </div>
+    <button type="button" class="btn-close shadow-none" (click)="fecharForm()"></button>
+  </div>
+  
+  <div class="offcanvas-body flex-grow-1">
+    <div class="row g-4">
+      <div class="col-12">
+        <label class="form-label fw-semibold text-secondary small mb-1">Nome do Produto <span class="text-danger">*</span></label>
+        <input type="text" class="form-control bg-light border-0" [(ngModel)]="form.nome" placeholder="Ex: Notebook Dell Inspiron">
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold text-secondary small mb-1">Descrição</label>
+        <textarea class="form-control bg-light border-0" [(ngModel)]="form.descricao" placeholder="Detalhes opcionais do produto..." rows="3"></textarea>
+      </div>
+      <div class="col-6">
+        <label class="form-label fw-semibold text-secondary small mb-1">Preço (R$) <span class="text-danger">*</span></label>
+        <input type="number" class="form-control bg-light border-0" [(ngModel)]="form.preco" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="col-6">
+        <label class="form-label fw-semibold text-secondary small mb-1">Estoque</label>
+        <input type="number" class="form-control bg-light border-0" [(ngModel)]="form.quantidade" min="0" placeholder="Qtd">
+      </div>
+      <div class="col-12 mt-4">
+        <div class="form-check form-switch custom-switch p-0 d-flex align-items-center justify-content-between">
+          <label class="form-check-label fw-semibold text-secondary" for="ativo">Produto Disponível p/ Venda</label>
+          <input class="form-check-input m-0 float-none" type="checkbox" id="ativo" [(ngModel)]="form.ativo">
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Lista -->
-  <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">Produtos cadastrados</h5>
-      <span class="badge bg-secondary">{{ produtos.length }}</span>
-    </div>
-    <div class="card-body p-0">
-
-      <div *ngIf="carregando" class="text-center py-4 text-muted">Carregando...</div>
-
-      <div *ngIf="!carregando && produtos.length === 0" class="text-center py-4 text-muted">
-        Nenhum produto cadastrado ainda.
-      </div>
-
-      <table *ngIf="!carregando && produtos.length > 0" class="table table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Nome</th>
-            <th>Descrição</th>
-            <th>Preço</th>
-            <th>Quantidade</th>
-            <th>Status</th>
-            <th class="text-end">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of produtos">
-            <td>{{ p.nome }}</td>
-            <td>{{ p.descricao || '—' }}</td>
-            <td>{{ p.preco | currency:'BRL' }}</td>
-            <td>{{ p.quantidade }}</td>
-            <td>
-              <span class="badge"
-                    [class.bg-success]="p.ativo"
-                    [class.bg-secondary]="!p.ativo">
-                {{ p.ativo ? 'Ativo' : 'Inativo' }}
-              </span>
-            </td>
-            <td class="text-end">
-              <button class="btn btn-sm btn-outline-primary me-1" (click)="editar(p)">Editar</button>
-              <button class="btn btn-sm btn-outline-danger" (click)="deletar(p.id!)">Excluir</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-    </div>
+  <div class="p-4 border-top bg-white">
+    <button class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm py-2 mb-2" (click)="salvar()">
+      <i class="bi me-2" [class.bi-check2]="editandoId" [class.bi-plus-lg]="!editandoId"></i>
+      {{ editandoId ? 'Salvar Alterações' : 'Cadastrar Produto' }}
+    </button>
+    <button class="btn btn-light text-muted w-100 rounded-pill fw-bold py-2" (click)="fecharForm()">
+      Cancelar
+    </button>
   </div>
-
 </div>

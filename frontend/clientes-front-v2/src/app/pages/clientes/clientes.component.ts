@@ -16,14 +16,18 @@ export class ClientesComponent implements OnInit {
   clientes: Cliente[] = [];
   form: Cliente = this.formVazio();
   editandoId: number | null = null;
+
+  // UX State
+  carregando = false;
+  mostrarForm = false; // Controla o Offcanvas
+
+  // Toast State
   mensagem = '';
   tipoMensagem: 'success' | 'danger' = 'success';
-  carregando = false;
 
-  constructor(private service: ClienteService) {}
+  constructor(private service: ClienteService) { }
 
   ngOnInit(): void {
-    console.log('[Clientes] Iniciado');
     this.carregar();
   }
 
@@ -33,14 +37,21 @@ export class ClientesComponent implements OnInit {
       next: (data) => {
         this.clientes = data;
         this.carregando = false;
-        console.log('[Clientes] Lista:', data.length, 'item(s)');
       },
       error: (err) => {
-        console.error('[Clientes] Erro ao carregar:', err);
         this.alerta('Não foi possível conectar ao servidor.', 'danger');
         this.carregando = false;
       }
     });
+  }
+
+  abrirNovo(): void {
+    this.resetar();
+    this.mostrarForm = true;
+  }
+
+  fecharForm(): void {
+    this.mostrarForm = false;
   }
 
   salvar(): void {
@@ -54,7 +65,7 @@ export class ClientesComponent implements OnInit {
         next: (atualizado) => {
           this.clientes = this.clientes.map(c => c.id === atualizado.id ? atualizado : c);
           this.alerta('Cliente atualizado com sucesso!', 'success');
-          this.resetar();
+          this.fecharForm();
         },
         error: (err: HttpErrorResponse) => this.alerta(this.mensagemErro(err), 'danger')
       });
@@ -63,7 +74,7 @@ export class ClientesComponent implements OnInit {
         next: (novo) => {
           this.clientes = [...this.clientes, novo];
           this.alerta('Cliente cadastrado com sucesso!', 'success');
-          this.resetar();
+          this.fecharForm();
         },
         error: (err: HttpErrorResponse) => this.alerta(this.mensagemErro(err), 'danger')
       });
@@ -74,7 +85,7 @@ export class ClientesComponent implements OnInit {
     this.editandoId = cliente.id!;
     this.form = { ...cliente };
     this.mensagem = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.mostrarForm = true; // Abre o painel
   }
 
   deletar(id: number): void {
@@ -93,6 +104,33 @@ export class ClientesComponent implements OnInit {
     this.editandoId = null;
   }
 
+  // Usada apenas na tela (tabela) para exibir o texto formatado
+  formatarTelefone(valor: string | undefined | null): string {
+    if (!valor) return 'Não informado';
+
+    // Remove tudo que não for número
+    let v = valor.replace(/\D/g, '');
+
+    // Aplica a máscara
+    if (v.length <= 10) {
+      v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+      v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    } else {
+      v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+      v = v.replace(/(\d{5})(\d)/, '$1-$2');
+    }
+
+    return v.substring(0, 15);
+  }
+
+  // Usada no formulário (ngModelChange) para formatar o que o usuário digita
+  mascararTelefone(valor: string): void {
+    if (!valor) {
+      this.form.telefone = '';
+      return;
+    }
+    this.form.telefone = this.formatarTelefone(valor);
+  }
   private formVazio(): Cliente {
     return { nome: '', email: '', telefone: '', ativo: true };
   }
@@ -100,7 +138,7 @@ export class ClientesComponent implements OnInit {
   private alerta(texto: string, tipo: 'success' | 'danger'): void {
     this.mensagem = texto;
     this.tipoMensagem = tipo;
-    setTimeout(() => (this.mensagem = ''), 5000);
+    setTimeout(() => (this.mensagem = ''), 4000); // Some depois de 4s
   }
 
   private mensagemErro(err: HttpErrorResponse): string {

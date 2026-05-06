@@ -1,0 +1,80 @@
+/* CSS Exclusivo para Produtos (Padrão Corporativo) */
+
+.dashboard-container {
+  padding: 0;
+}
+
+.premium-card {
+  border-radius: 20px;
+  background-color: #fff;
+}
+
+/* Bolinha de ícone menor para o cabeçalho do card */
+.icon-circle-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+/* Inputs modernizados (sem borda forte, apenas fundo cinza e foco suave) */
+.form-control {
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus {
+  background-color: #fff !important;
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+  border-color: #0d6efd;
+}
+
+/* Switch (Checkbox) personalizado */
+.custom-switch .form-check-input {
+  width: 3em;
+  height: 1.5em;
+  cursor: pointer;
+}
+.custom-switch .form-check-input:checked {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+/* Tabela Personalizada */
+.custom-table th {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #f1f3f5;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.custom-table td {
+  padding: 1rem 0.5rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+/* Efeito Hover na Tabela */
+.custom-table tbody tr {
+  transition: background-color 0.2s;
+}
+.custom-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Botões de Ação na Tabela */
+.btn-group .btn {
+  padding: 0.4rem 0.8rem;
+  background: #fff;
+}
+.btn-group .btn:hover {
+  background: #f1f3f5;
+}

@@ -1,96 +1,161 @@
-<div class="container py-5">
-
-  <!-- Alerta -->
-  <div *ngIf="mensagem" class="alert alert-dismissible fade show"
-       [class.alert-success]="tipoMensagem === 'success'"
-       [class.alert-danger]="tipoMensagem === 'danger'"
-       role="alert">
-    {{ mensagem }}
-    <button type="button" class="btn-close" (click)="mensagem = ''"></button>
+<div class="container-fluid dashboard-container">
+  
+  <!-- Cabeçalho da Página -->
+  <div class="d-flex align-items-end justify-content-between mb-3 border-bottom pb-2">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-people fs-4 text-primary"></i>
+      <h4 class="fw-bold text-dark mb-0">Gestão de Clientes</h4>
+    </div>
+    <!-- Botão principal movido para o topo direito -->
+    <button class="btn btn-sm btn-primary rounded-pill fw-bold px-3 shadow-sm" (click)="abrirNovo()">
+      <i class="bi bi-plus-lg me-1"></i> Inserir
+    </button>
   </div>
 
-  <!-- Formulário -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-header">
-      <h5 class="mb-0">{{ editandoId ? 'Editar Cliente' : 'Novo Cliente' }}</h5>
+  <!-- Toast Notification Customizado -->
+  <div class="custom-toast-container">
+    <div class="custom-toast" [class.show]="mensagem" [class.success]="tipoMensagem === 'success'" [class.danger]="tipoMensagem === 'danger'">
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi fs-4" [class.bi-check-circle-fill]="tipoMensagem === 'success'" [class.bi-exclamation-triangle-fill]="tipoMensagem === 'danger'" [class.text-success]="tipoMensagem === 'success'" [class.text-danger]="tipoMensagem === 'danger'"></i>
+        <div>
+          <h6 class="mb-0 fw-bold">{{ tipoMensagem === 'success' ? 'Sucesso!' : 'Atenção' }}</h6>
+          <small class="text-muted">{{ mensagem }}</small>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label">Nome <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" [(ngModel)]="form.nome" placeholder="Nome completo">
+  </div>
+
+  <!-- Lista de Clientes (Ocupa 100% do espaço agora) -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card premium-card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0 p-4 d-flex justify-content-between align-items-center">
+          <h5 class="mb-0 fw-bold text-dark">Clientes Cadastrados</h5>
+          <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">{{ clientes.length }} registros</span>
         </div>
-        <div class="col-md-6">
-          <label class="form-label">Email <span class="text-danger">*</span></label>
-          <input type="email" class="form-control" [(ngModel)]="form.email" placeholder="email@exemplo.com">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Telefone</label>
-          <input type="text" class="form-control" [(ngModel)]="form.telefone" placeholder="(00) 00000-0000">
-        </div>
-        <div class="col-md-6 d-flex align-items-end">
-          <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="ativo" [(ngModel)]="form.ativo">
-            <label class="form-check-label" for="ativo">Ativo</label>
+        
+        <div class="card-body p-0">
+          
+          <!-- SKELETON LOADING (Premium) -->
+          <div *ngIf="carregando" class="p-4">
+            <div *ngFor="let i of [1,2,3,4]" class="d-flex align-items-center mb-4 pb-3 border-bottom">
+              <div class="skeleton skeleton-avatar me-3"></div>
+              <div class="w-100">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-text w-25"></div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!carregando && clientes.length === 0" class="text-center py-5">
+            <div class="text-muted mb-3"><i class="bi bi-inbox fs-1"></i></div>
+            <h6 class="text-muted fw-normal">Nenhum cliente cadastrado ainda.</h6>
+            <button class="btn btn-outline-primary mt-3 rounded-pill" (click)="abrirNovo()">Criar o primeiro</button>
+          </div>
+
+          <div class="table-responsive" *ngIf="!carregando && clientes.length > 0">
+            <table class="table table-hover align-middle mb-0 custom-table">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-4">Cliente</th>
+                  <th>Contato</th>
+                  <th>Status</th>
+                  <th class="text-end pe-4">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of clientes">
+                  <td class="ps-4">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="avatar bg-light text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        {{ c.nome.charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <h6 class="mb-0 fw-bold">{{ c.nome }}</h6>
+                        <small class="text-muted">{{ c.email }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-secondary"><i class="bi bi-telephone me-1"></i> {{ formatarTelefone(c.telefone) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge rounded-pill px-3"
+                          [class.bg-success-subtle]="c.ativo" [class.text-success]="c.ativo"
+                          [class.bg-secondary-subtle]="!c.ativo" [class.text-secondary]="!c.ativo">
+                      <i class="bi me-1" [class.bi-check-circle-fill]="c.ativo" [class.bi-dash-circle-fill]="!c.ativo"></i>
+                      {{ c.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </td>
+                  <td class="text-end pe-4">
+                    <div class="btn-group shadow-sm rounded-pill">
+                      <button class="btn btn-sm btn-light text-primary border-0" (click)="editar(c)" title="Editar">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+                      <button class="btn btn-sm btn-light text-danger border-0" (click)="deletar(c.id!)" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-      <div class="mt-4 d-flex gap-2">
-        <button class="btn btn-primary" (click)="salvar()">
-          {{ editandoId ? 'Atualizar' : 'Cadastrar' }}
-        </button>
-        <button *ngIf="editandoId" class="btn btn-outline-secondary" (click)="resetar()">
-          Cancelar
-        </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- OFFCANVAS BACKGROUND (Fundo Escuro Embaçado) -->
+<div class="custom-offcanvas-backdrop" [class.show]="mostrarForm" (click)="fecharForm()"></div>
+
+<!-- OFFCANVAS FORM (Painel Lateral Deslizante) -->
+<div class="custom-offcanvas" [class.show]="mostrarForm">
+  <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+    <div class="d-flex align-items-center gap-2">
+      <div class="icon-circle-sm bg-primary-subtle text-primary">
+        <i class="bi" [class.bi-person-plus-fill]="!editandoId" [class.bi-pencil-square]="editandoId"></i>
+      </div>
+      <h5 class="mb-0 fw-bold text-dark">{{ editandoId ? 'Editar Cliente' : 'Novo Cliente' }}</h5>
+    </div>
+    <button type="button" class="btn-close shadow-none" (click)="fecharForm()"></button>
+  </div>
+  
+  <div class="offcanvas-body flex-grow-1">
+    <div class="row g-4">
+      <div class="col-12">
+        <label class="form-label fw-semibold text-secondary small mb-1">Nome Completo <span class="text-danger">*</span></label>
+        <input type="text" class="form-control bg-light border-0" [(ngModel)]="form.nome" placeholder="Ex: João da Silva">
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold text-secondary small mb-1">Email <span class="text-danger">*</span></label>
+        <input type="email" class="form-control bg-light border-0" [(ngModel)]="form.email" placeholder="joao@exemplo.com">
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold text-secondary small mb-1">Telefone</label>
+        <input type="text" class="form-control bg-light border-0" 
+               [(ngModel)]="form.telefone" 
+               (ngModelChange)="mascararTelefone($event)"
+               placeholder="(00) 00000-0000">
+      </div>
+      <div class="col-12 mt-4">
+        <div class="form-check form-switch custom-switch p-0 d-flex align-items-center justify-content-between">
+          <label class="form-check-label fw-semibold text-secondary" for="ativo">Cliente Ativo no Sistema</label>
+          <input class="form-check-input m-0 float-none" type="checkbox" id="ativo" [(ngModel)]="form.ativo">
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Lista -->
-  <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">Clientes cadastrados</h5>
-      <span class="badge bg-secondary">{{ clientes.length }}</span>
-    </div>
-    <div class="card-body p-0">
-
-      <div *ngIf="carregando" class="text-center py-4 text-muted">Carregando...</div>
-
-      <div *ngIf="!carregando && clientes.length === 0" class="text-center py-4 text-muted">
-        Nenhum cliente cadastrado ainda.
-      </div>
-
-      <table *ngIf="!carregando && clientes.length > 0" class="table table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Nome</th>
-            <th>Email</th>
-            <th>Telefone</th>
-            <th>Status</th>
-            <th class="text-end">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let c of clientes">
-            <td>{{ c.nome }}</td>
-            <td>{{ c.email }}</td>
-            <td>{{ c.telefone || '—' }}</td>
-            <td>
-              <span class="badge"
-                    [class.bg-success]="c.ativo"
-                    [class.bg-secondary]="!c.ativo">
-                {{ c.ativo ? 'Ativo' : 'Inativo' }}
-              </span>
-            </td>
-            <td class="text-end">
-              <button class="btn btn-sm btn-outline-primary me-1" (click)="editar(c)">Editar</button>
-              <button class="btn btn-sm btn-outline-danger" (click)="deletar(c.id!)">Excluir</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-    </div>
+  <div class="p-4 border-top bg-white">
+    <button class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm py-2 mb-2" (click)="salvar()">
+      <i class="bi me-2" [class.bi-check2]="editandoId" [class.bi-plus-lg]="!editandoId"></i>
+      {{ editandoId ? 'Salvar Alterações' : 'Cadastrar Cliente' }}
+    </button>
+    <button class="btn btn-light text-muted w-100 rounded-pill fw-bold py-2" (click)="fecharForm()">
+      Cancelar
+    </button>
   </div>
-
 </div>

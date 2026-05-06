@@ -1,0 +1,26 @@
+/* CSS Exclusivo para o Dashboard */
+
+.premium-card {
+  border-radius: 20px; /* Bordas bem arredondadas, muito moderno */
+  transition: all 0.3s ease; /* Faz com que qualquer animação dure 0.3s e seja suave */
+}
+
+/* Efeito ao passar o mouse por cima do card */
+.premium-card:hover {
+  transform: translateY(-8px); /* Sobe o card um pouquinho */
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; /* Aumenta a sombra */
+}
+
+/* Bolinha bonitinha para colocar ícones dentro */
+.icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.dashboard-container {
+  padding: 0px 0px;
+}

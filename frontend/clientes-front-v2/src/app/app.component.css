@@ -1,0 +1,90 @@
+/* Layout principal */
+.app-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8f9fa; /* Fundo cinza bem clarinho para o painel */
+}
+
+/* Sidebar estilo Premium */
+.sidebar {
+  width: 240px; /* Reduzido de 280px para dar mais espaço à tela */
+  min-width: 240px; /* Reduzido de 280px */
+  flex-shrink: 0;   /* Impede o flexbox de encolher a sidebar */
+  background: #ffffff; /* Fundo branco puro */
+  border-right: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  position: sticky; /* Fica fixo na tela ao rolar a página */
+  top: 0;
+  height: 100vh;
+  z-index: 1000;
+  transition: all 0.3s;
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.brand-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0d6efd;
+  letter-spacing: -0.5px;
+}
+
+.nav-pills .nav-link {
+  color: #495057;
+  padding: 0.8rem 1.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 10px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.nav-pills .nav-link:hover {
+  background-color: #f1f3f5;
+  color: #0d6efd;
+}
+
+/* O item ativo da Sidebar */
+.nav-pills .nav-link.active {
+  background-color: #0d6efd;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+}
+
+.nav-pills .nav-link i {
+  font-size: 1.2rem;
+}
+
+/* Área direita (engloba Topbar e Conteúdo) */
+.right-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0; /* Importante para o Flexbox não estourar a tela horizontalmente */
+}
+
+/* Topbar Global */
+.topbar {
+  height: 60px; /* Reduzido para ficar mais fino e elegante */
+  position: sticky;
+  top: 0;
+  z-index: 900;
+}
+
+/* Área de conteúdo principal */
+.main-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 1.5rem; /* Reduzido de 2rem para economizar espaço de tela */
+}
+
+/* Utilitário para mouse na topbar */
+.cursor-pointer {
+  cursor: pointer;
+}

@@ -1,11 +1,86 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container">
-    <a class="navbar-brand" routerLink="/">Meu Sistema</a>
-    <div class="navbar-nav">
-      <a class="nav-link text-white" routerLink="/clientes" routerLinkActive="fw-bold">Clientes</a>
-      <a class="nav-link text-white" routerLink="/produtos" routerLinkActive="fw-bold">Produtos</a>
+<div class="app-wrapper">
+  
+  <!-- Sidebar Lateral -->
+  <aside class="sidebar shadow-sm">
+    <div class="sidebar-header">
+      <span class="brand-text">
+        <i class="bi bi-box-seam me-2"></i>LexCRM
+      </span>
     </div>
-  </div>
-</nav>
+    
+    <div class="sidebar-body p-3">
+      <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+          <!-- routerLinkActive="active" é do Angular: Ele aplica a classe "active" automaticamente se a rota combinar! -->
+          <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-grid-1x2"></i>
+            Painel Geral
+          </a>
+        </li>
+        <li class="nav-item mt-2">
+          <small class="text-muted fw-bold px-3 text-uppercase" style="font-size: 0.75rem;">Módulos</small>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/clientes" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-people"></i>
+            Clientes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/produtos" routerLinkActive="active" class="nav-link">
+            <i class="bi bi-box2"></i>
+            Produtos
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    <div class="sidebar-footer p-3 mt-auto border-top text-center">
+      <span class="text-muted small">Versão 1.0</span>
+    </div>
+  </aside>
 
-<router-outlet></router-outlet>
+  <!-- Container Direito (Topbar + Conteúdo) -->
+  <div class="right-wrapper">
+    
+    <!-- Topbar Global -->
+    <header class="topbar bg-white shadow-sm px-4 d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <!-- Ícone para telas pequenas (Mobile) para no futuro abrir/fechar sidebar -->
+        <button class="btn btn-sm btn-light d-lg-none me-3"><i class="bi bi-list"></i></button>
+        <div class="input-group input-group-sm" style="width: 250px;">
+          <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" class="form-control bg-light border-0 shadow-none" placeholder="Buscar no sistema...">
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-light position-relative rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+          <i class="bi bi-bell text-secondary" style="font-size: 1.1rem;"></i>
+          <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+            <span class="visually-hidden">Novas notificações</span>
+          </span>
+        </button>
+        
+        <div class="vr mx-1 bg-secondary opacity-25" style="height: 24px; align-self: center;"></div>
+        
+        <div class="d-flex align-items-center gap-2 cursor-pointer">
+          <div class="text-end d-none d-md-block">
+            <h6 class="mb-0 fw-bold" style="font-size: 0.85rem;">Administrador</h6>
+            <small class="text-muted" style="font-size: 0.7rem;">admin&#64;lexcrm.com</small>
+          </div>
+          <div class="avatar bg-primary text-white fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 0.9rem;">
+            A
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Onde as outras telas (Dashboard, Clientes, Produtos) vão renderizar -->
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+    
+  </div>
+
+</div>
