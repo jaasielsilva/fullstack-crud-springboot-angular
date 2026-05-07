@@ -109,6 +109,12 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
             set -euo pipefail
+            export GIT_TERMINAL_PROMPT=0
+            cd /opt/erpcorporativo/repo
+            git fetch origin
+            git checkout main
+            git reset --hard origin/main
+            cp deploy/prod/docker-compose.yml /opt/erpcorporativo/prod/docker-compose.yml
             cd /opt/erpcorporativo/prod
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             docker compose pull
