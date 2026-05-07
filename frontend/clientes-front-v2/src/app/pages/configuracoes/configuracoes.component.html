@@ -35,6 +35,9 @@
                     <button class="nav-link text-start mb-2" [class.active]="abaAtiva === 'logs'" (click)="abaAtiva = 'logs'">
                         <i class="bi bi-activity me-2"></i> Auditoria & Logs
                     </button>
+                    <button class="nav-link text-start mb-2" [class.active]="abaAtiva === 'notificacoes'" (click)="abaAtiva = 'notificacoes'">
+                        <i class="bi bi-bell me-2"></i> Notificações
+                    </button>
                 </nav>
             </div>
         </div>
@@ -105,6 +108,50 @@
                         <h4 class="mt-4 fw-bold">Políticas de Segurança</h4>
                         <p class="text-muted">Ajuste regras de expiração de senha, 2FA e bloqueios de IP.</p>
                         <button class="btn btn-outline-primary rounded-pill px-4 mt-3 disabled">Módulo em Desenvolvimento</button>
+                    </div>
+                </div>
+
+                <!-- ABA: NOTIFICAÇÕES -->
+                <div *ngIf="abaAtiva === 'notificacoes'" class="animate__animated animate__fadeIn">
+                    <div class="card-header bg-light border-bottom p-4">
+                        <h5 class="mb-1 fw-bold text-dark">Preferências de Notificação</h5>
+                        <p class="text-muted small mb-0">Escolha quais alertas você deseja receber e por quais canais.</p>
+                    </div>
+                    <div class="card-body p-4 p-lg-5">
+                        <div class="row g-5">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3 text-dark border-bottom pb-2">O que notificar?</h6>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" [(ngModel)]="notificacoesConfig.novosClientes" id="notifCliente">
+                                    <label class="form-check-label" for="notifCliente">Novos Clientes Cadastrados</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" [(ngModel)]="notificacoesConfig.novosPedidos" id="notifPedido">
+                                    <label class="form-check-label" for="notifPedido">Novos Pedidos Realizados</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" [(ngModel)]="notificacoesConfig.relatoriosMensais" id="notifRelat">
+                                    <label class="form-check-label" for="notifRelat">Relatórios de Vendas Mensais</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3 text-dark border-bottom pb-2">Como notificar?</h6>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" [(ngModel)]="notificacoesConfig.avisarEmail" id="notifEmail">
+                                    <label class="form-check-label" for="notifEmail">Enviar por E-mail</label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" [(ngModel)]="notificacoesConfig.avisarBrowser" id="notifPush">
+                                    <label class="form-check-label" for="notifPush">Notificações no Navegador (Push)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 border-top pt-4 text-end">
+                            <button class="btn btn-primary rounded-pill px-5 fw-bold py-2 shadow-sm" (click)="mensagemSucesso = 'Preferências de notificação atualizadas!';">
+                                <i class="bi bi-save2 me-2"></i> Atualizar Preferências
+                            </button>
+                        </div>
                     </div>
                 </div>
 

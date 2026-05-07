@@ -27,6 +27,14 @@ export class ConfiguracoesComponent implements OnInit {
   mensagemErro = '';
   abaAtiva = 'email'; // Controla qual aba de configuração está visível
 
+  notificacoesConfig = {
+    novosClientes: true,
+    novosPedidos: true,
+    relatoriosMensais: false,
+    avisarEmail: true,
+    avisarBrowser: true
+  };
+
   private apiUrl = 'http://localhost:8080/api/config/email';
 
   constructor(private http: HttpClient) {}

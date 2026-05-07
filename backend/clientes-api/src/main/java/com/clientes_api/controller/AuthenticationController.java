@@ -128,4 +128,24 @@ public class AuthenticationController {
             );
         }
     }
+
+    @PostMapping("/reset-password-forced")
+    public ResponseEntity<?> resetPasswordForced(@RequestBody Map<String, String> data) {
+        String novaSenha = data.get("novaSenha");
+        if (novaSenha == null || novaSenha.length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "A senha deve ter pelo menos 6 caracteres."));
+        }
+
+        // Obtém o usuário logado do contexto de segurança
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        Usuario usuario = (Usuario) auth.getPrincipal();
+
+        // Atualiza a senha e desativa a flag de redefinição forçada
+        String encryptedPassword = new BCryptPasswordEncoder().encode(novaSenha);
+        usuario.setSenha(encryptedPassword);
+        usuario.setRedefinirSenha(false);
+        repository.save(usuario);
+
+        return ResponseEntity.ok(Map.of("mensagem", "Senha atualizada com sucesso!"));
+    }
 }

@@ -10,7 +10,7 @@ import lombok.Data;
 @Entity
 @Data
 @Table(name = "produtos")
-public class Produto {
+public class Produto extends AuditModel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

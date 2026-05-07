@@ -4,6 +4,7 @@ import com.clientes_api.model.EmailConfig;
 import com.clientes_api.repository.EmailConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,7 @@ public class EmailConfigController {
     private EmailConfigRepository repository;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmailConfig> getConfig() {
         return repository.findFirstByOrderByIdAsc()
                 .map(ResponseEntity::ok)
@@ -23,6 +25,7 @@ public class EmailConfigController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EmailConfig> saveConfig(@RequestBody EmailConfig data) {
         EmailConfig config = repository.findFirstByOrderByIdAsc()
                 .map(existing -> {
