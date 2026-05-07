@@ -19,7 +19,7 @@
                 </div>
 
                 <div class="modal-footer border-0 p-4 pt-0 gap-2 justify-content-center">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold py-2 border shadow-sm" (click)="onCancel()">
+                    <button *ngIf="showCancel" type="button" class="btn btn-light rounded-pill px-4 fw-bold py-2 border shadow-sm" (click)="onCancel()">
                         {{ cancelText }}
                     </button>
                     <button type="button" class="btn rounded-pill px-4 fw-bold py-2 shadow-sm" 
