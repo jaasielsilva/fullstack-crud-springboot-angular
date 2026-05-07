@@ -1,0 +1,47 @@
+<div class="login-wrapper">
+  <div class="login-container shadow-lg">
+    <div class="login-header text-center mb-4">
+      <div class="logo-circle mx-auto mb-3">
+        <i class="bi bi-box-seam-fill text-white fs-1"></i>
+      </div>
+      <h3 class="fw-bold text-dark">LexCRM</h3>
+      <p class="text-muted">Acesso ao Sistema Corporativo</p>
+    </div>
+
+    <!-- Mensagem de Erro (Se houver) -->
+    <div class="alert alert-danger border-0 py-2 d-flex align-items-center mb-4" *ngIf="mensagemErro">
+      <i class="bi bi-exclamation-circle-fill me-2"></i>
+      <small class="fw-semibold">{{ mensagemErro }}</small>
+    </div>
+
+    <form (ngSubmit)="entrar()">
+      <div class="mb-3">
+        <label class="form-label text-secondary small fw-bold mb-1">E-mail Corporativo</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+          <input type="email" class="form-control bg-light border-start-0 ps-0" 
+                 [(ngModel)]="loginData.login" name="login" placeholder="admin@lexcrm.com.br" required>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-end mb-1">
+          <label class="form-label text-secondary small fw-bold mb-0">Senha</label>
+          <a routerLink="/forgot-password" class="text-primary small text-decoration-none">Esqueceu a senha?</a>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+          <input type="password" class="form-control bg-light border-start-0 ps-0" 
+                 [(ngModel)]="loginData.senha" name="senha" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm d-flex justify-content-center align-items-center" [disabled]="carregando">
+        <span *ngIf="!carregando">Entrar no Sistema</span>
+        <div *ngIf="carregando" class="spinner-border spinner-border-sm text-light" role="status">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+      </button>
+    </form>
+  </div>
+</div>

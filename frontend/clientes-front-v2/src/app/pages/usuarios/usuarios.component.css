@@ -1,0 +1,38 @@
+.table thead th {
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border: none;
+}
+
+.table tbody td {
+    font-size: 0.85rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.card {
+    border-radius: 15px;
+}
+
+.avatar {
+    font-size: 0.9rem;
+}
+
+.badge {
+    font-size: 0.7rem;
+    letter-spacing: 0.3px;
+}
+
+.modal-content {
+    border-radius: 20px;
+}
+
+.form-control, .form-select {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+}
+
+.btn-light:hover {
+    background-color: #f1f3f5;
+}
