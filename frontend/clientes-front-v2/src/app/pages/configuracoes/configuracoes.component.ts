@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-configuracoes',
@@ -27,7 +28,15 @@ export class ConfiguracoesComponent implements OnInit {
   mensagemErro = '';
   abaAtiva = 'email'; // Controla qual aba de configuração está visível
 
-  private apiUrl = 'http://localhost:8080/api/config/email';
+  notificacoesConfig = {
+    novosClientes: true,
+    novosPedidos: true,
+    relatoriosMensais: false,
+    avisarEmail: true,
+    avisarBrowser: true
+  };
+
+  private apiUrl = `${environment.apiUrl}/api/config/email`;
 
   constructor(private http: HttpClient) {}
 

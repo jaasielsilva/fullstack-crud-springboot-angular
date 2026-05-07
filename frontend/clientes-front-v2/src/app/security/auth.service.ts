@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api/auth';
+  private apiUrl = `${environment.apiUrl}/api/auth`;
   private loggedIn = new BehaviorSubject<boolean>(this.hasToken());
 
   constructor(private http: HttpClient, private router: Router) {}
@@ -41,5 +42,44 @@ export class AuthService {
     localStorage.removeItem('token');
     this.loggedIn.next(false);
     this.router.navigate(['/login']);
+  }
+
+  // Decodifica o payload do JWT para pegar a Role
+  getRole(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      // O JWT é composto por Header.Payload.Signature. O payload é a parte 1.
+      const payloadBase64 = token.split('.')[1];
+      const payloadJson = JSON.parse(atob(payloadBase64));
+      return payloadJson.role || null;
+    } catch (e) {
+      console.error('Erro ao decodificar token', e);
+      return null;
+    }
+  }
+
+  // Verifica se o usuário tem alguma das roles permitidas
+  hasRole(allowedRoles: string[]): boolean {
+    const userRole = this.getRole();
+    if (!userRole) return false;
+    return allowedRoles.includes(userRole);
+  }
+
+  getUserInfo(): any {
+    const token = this.getToken();
+    if (!token) return { sub: 'Visitante', role: 'USER' };
+    try {
+      const payloadBase64 = token.split('.')[1];
+      return JSON.parse(atob(payloadBase64));
+    } catch (e) {
+      return { sub: 'Erro', role: 'USER' };
+    }
+  }
+
+  // Super Admin é o administrador da Matriz (Tenant ID: 1)
+  isSuperAdmin(): boolean {
+    const info = this.getUserInfo();
+    return info.role === 'ADMIN' && info.tenantId === 1;
   }
 }

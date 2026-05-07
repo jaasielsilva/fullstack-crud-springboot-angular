@@ -24,6 +24,9 @@ public class TokenService {
             return JWT.create()
                     .withIssuer("lexcrm-api")
                     .withSubject(usuario.getLogin())
+                    .withClaim("role", usuario.getRole().name())
+                    .withClaim("tenantId", usuario.getTenantId())
+                    .withClaim("mustChangePassword", usuario.getRedefinirSenha()) // Nova Claim
                     .withExpiresAt(genExpirationDate())
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
@@ -41,6 +44,19 @@ public class TokenService {
                     .getSubject();
         } catch (JWTVerificationException exception) {
             return "";
+        }
+    }
+
+    public Long getTenantIdFromToken(String token) {
+        try {
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+            return JWT.require(algorithm)
+                    .withIssuer("lexcrm-api")
+                    .build()
+                    .verify(token)
+                    .getClaim("tenantId").asLong();
+        } catch (JWTVerificationException exception) {
+            return null;
         }
     }
 

@@ -1,0 +1,71 @@
+# ============================================================
+# Stack de PRODUÇÃO
+# Frontend: https://erpcorporativo.shop (+ www)
+# API:      https://api.erpcorporativo.shop
+#
+# TLS é terminado pelo Nginx do HOST.
+# Bind apenas em 127.0.0.1 — não conflita com lavarapido (:8080/:8081).
+# ============================================================
+services:
+  mysql-prod:
+    image: mysql:8.0
+    container_name: mysql-prod
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+    networks:
+      - internal-prod
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api-prod:
+    image: ${API_IMAGE}
+    container_name: api-prod
+    restart: unless-stopped
+    depends_on:
+      mysql-prod:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql-prod
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_CORS_ALLOWED_ORIGINS: https://erpcorporativo.shop,https://www.erpcorporativo.shop
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    networks:
+      - internal-prod
+    ports:
+      - "127.0.0.1:${HOST_PORT_API_PROD:-9103}:8080"
+
+  web-prod:
+    image: ${WEB_IMAGE}
+    container_name: web-prod
+    restart: unless-stopped
+    depends_on:
+      - api-prod
+    networks:
+      - internal-prod
+    ports:
+      - "127.0.0.1:${HOST_PORT_WEB_PROD:-9104}:80"
+
+volumes:
+  mysql_prod_data:
+
+networks:
+  internal-prod:
+    driver: bridge

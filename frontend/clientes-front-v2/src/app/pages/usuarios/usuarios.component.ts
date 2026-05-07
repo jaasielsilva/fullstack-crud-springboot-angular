@@ -2,11 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { AuthService } from '../../security/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-usuarios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent],
   templateUrl: './usuarios.component.html',
   styleUrl: './usuarios.component.css'
 })
@@ -17,9 +20,17 @@ export class UsuariosComponent implements OnInit {
   isEditando = false;
   mostrarForm = false; // Controle do Painel Lateral
   
-  private apiUrl = 'http://localhost:8080/api/usuarios';
+  // Controle do Modal de Confirmação
+  showConfirmModal = false;
+  idParaExcluir: number | null = null;
+  
+  private apiUrl = `${environment.apiUrl}/api/usuarios`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
+
+  isUsuarioLogado(login: string): boolean {
+    return this.authService.getUserInfo().sub === login;
+  }
 
   ngOnInit(): void {
     this.listar();
@@ -58,9 +69,20 @@ export class UsuariosComponent implements OnInit {
     this.mostrarForm = true;
   }
 
-  excluir(id: number) {
-    if (confirm('Deseja realmente excluir este usuário?')) {
-      this.http.delete(`${this.apiUrl}/${id}`).subscribe(() => this.listar());
+  // Abre o modal em vez de usar confirm() nativo
+  confirmarExcluir(id: number) {
+    this.idParaExcluir = id;
+    this.showConfirmModal = true;
+  }
+
+  // Executa a exclusão após confirmar no modal
+  executarExclusao() {
+    if (this.idParaExcluir) {
+      this.http.delete(`${this.apiUrl}/${this.idParaExcluir}`).subscribe(() => {
+        this.listar();
+        this.showConfirmModal = false;
+        this.idParaExcluir = null;
+      });
     }
   }
 

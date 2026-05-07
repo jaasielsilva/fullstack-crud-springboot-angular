@@ -20,8 +20,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(of = "id")
-public class Usuario implements UserDetails {
+@EqualsAndHashCode(of = "id", callSuper = false)
+public class Usuario extends AuditModel implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,9 +36,15 @@ public class Usuario implements UserDetails {
     @Enumerated(EnumType.STRING)
     private UsuarioRole role;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", insertable = false, updatable = false)
+    private Tenant tenant;
+
     private String resetToken;
 
     private java.time.LocalDateTime resetTokenExpiry;
+
+    private Boolean redefinirSenha = true; // Força redefinição no primeiro acesso
 
     public void setResetToken(String resetToken) {
         this.resetToken = resetToken;
@@ -68,10 +74,11 @@ public class Usuario implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        String roleName = "ROLE_" + this.role.name();
         if(this.role == UsuarioRole.ADMIN) {
             return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
         } else {
-            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+            return List.of(new SimpleGrantedAuthority(roleName));
         }
     }
 

@@ -1,0 +1,87 @@
+name: "Telegram Notify"
+description: "Envia mensagem para um chat do Telegram via Bot API."
+inputs:
+  bot_token:
+    description: "Token do bot do Telegram"
+    required: true
+  chat_id:
+    description: "ID do chat (usuário, grupo ou canal)"
+    required: true
+  status:
+    description: "Status do evento: start | success | failure"
+    required: true
+  title:
+    description: "Título da notificação (ex.: CI, Deploy HML)"
+    required: true
+  message:
+    description: "Linhas adicionais (opcional)"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Send Telegram message
+      shell: bash
+      env:
+        BOT_TOKEN: ${{ inputs.bot_token }}
+        CHAT_ID: ${{ inputs.chat_id }}
+        STATUS: ${{ inputs.status }}
+        TITLE: ${{ inputs.title }}
+        EXTRA: ${{ inputs.message }}
+        REPO: ${{ github.repository }}
+        REF: ${{ github.ref_name }}
+        SHA: ${{ github.sha }}
+        ACTOR: ${{ github.actor }}
+        RUN_ID: ${{ github.run_id }}
+        SERVER_URL: ${{ github.server_url }}
+      run: |
+        if [ -z "${BOT_TOKEN}" ] || [ -z "${CHAT_ID}" ]; then
+          echo "Telegram secrets ausentes — pulando notificação."
+          exit 0
+        fi
+
+        case "${STATUS}" in
+          start)   ICON="🚀" ;;
+          success) ICON="✅" ;;
+          failure) ICON="❌" ;;
+          *)       ICON="ℹ️" ;;
+        esac
+
+        SHORT_SHA="${SHA:0:7}"
+        RUN_URL="${SERVER_URL}/${REPO}/actions/runs/${RUN_ID}"
+
+        # Monta a mensagem em HTML (mais seguro que Markdown para escape).
+        # Escapa <, >, & no conteúdo dinâmico.
+        esc() {
+          printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+        }
+
+        SAFE_EXTRA=$(esc "${EXTRA}")
+        SAFE_REPO=$(esc "${REPO}")
+        SAFE_REF=$(esc "${REF}")
+        SAFE_ACTOR=$(esc "${ACTOR}")
+        SAFE_TITLE=$(esc "${TITLE}")
+
+        {
+          printf '%s <b>%s</b>\n' "${ICON}" "${SAFE_TITLE}"
+          printf '<b>Repo:</b> <code>%s</code>\n' "${SAFE_REPO}"
+          printf '<b>Branch:</b> <code>%s</code>\n' "${SAFE_REF}"
+          printf '<b>Commit:</b> <code>%s</code>\n' "${SHORT_SHA}"
+          printf '<b>Autor:</b> %s\n' "${SAFE_ACTOR}"
+          if [ -n "${SAFE_EXTRA}" ]; then
+            printf '\n%s\n' "${SAFE_EXTRA}"
+          fi
+          printf '\n<a href="%s">Ver execução</a>\n' "${RUN_URL}"
+        } > /tmp/tg-message.txt
+
+        # Envia via JSON usando jq para gerar payload válido
+        jq -Rn --arg chat_id "${CHAT_ID}" \
+               --arg text "$(cat /tmp/tg-message.txt)" \
+               '{chat_id: $chat_id, text: $text, parse_mode: "HTML", disable_web_page_preview: true}' \
+          | curl -fsS -X POST \
+              -H "Content-Type: application/json" \
+              -d @- \
+              "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+              > /dev/null \
+          || echo "Falha ao enviar Telegram (não bloqueante)."

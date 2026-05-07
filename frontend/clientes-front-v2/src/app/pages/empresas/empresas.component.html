@@ -1,0 +1,138 @@
+<div class="container-fluid dashboard-container">
+    
+    <!-- Cabeçalho da Página -->
+    <div class="d-flex align-items-end justify-content-between mb-3 border-bottom pb-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-buildings fs-4 text-primary"></i>
+            <h4 class="fw-bold text-dark mb-0">Gestão de Empresas (SaaS)</h4>
+        </div>
+        <button class="btn btn-sm btn-primary rounded-pill fw-bold px-3 shadow-sm" (click)="abrirNovo()">
+            <i class="bi bi-plus-lg me-1"></i> Nova Empresa
+        </button>
+    </div>
+
+    <div class="row g-4">
+        <!-- Lista de Empresas em Cards para um visual mais moderno -->
+        <div class="col-md-6 col-xl-4" *ngFor="let t of tenants">
+            <div class="card premium-card border-0 shadow-sm h-100 p-3">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="icon-box bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                        <i class="bi bi-building fs-5"></i>
+                    </div>
+                    <span class="badge rounded-pill" [ngClass]="t.ativo ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+                        {{ t.ativo ? 'ATIVA' : 'INATIVA' }}
+                    </span>
+                </div>
+                <h5 class="fw-bold mb-1">{{ t.nome }}</h5>
+                <p class="text-muted small mb-3"><i class="bi bi-card-text me-1"></i> CNPJ: {{ t.cnpj || 'Não informado' }}</p>
+                
+                <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-secondary small">ID: #{{ t.id }}</span>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" (click)="verDetalhes(t)">Detalhes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- OFFCANVAS BACKGROUND (Compartilhado) -->
+<div class="custom-offcanvas-backdrop" [class.show]="mostrarForm || mostrarDetalhes" (click)="fecharForm(); fecharDetalhes()"></div>
+
+<!-- OFFCANVAS DETALHES DA EMPRESA -->
+<div class="custom-offcanvas" [class.show]="mostrarDetalhes">
+    <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-white shadow-sm">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+            <h5 class="mb-0 fw-bold text-dark">Dados da Organização</h5>
+        </div>
+        <button type="button" class="btn-close" (click)="fecharDetalhes()"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4" *ngIf="empresaSelecionada">
+        <div class="text-center mb-4 pb-3 border-bottom">
+            <div class="icon-circle bg-primary-subtle text-primary mx-auto mb-2 d-flex align-items-center justify-content-center rounded-circle" style="width: 60px; height: 60px;">
+                <i class="bi bi-building fs-3"></i>
+            </div>
+            <h5 class="fw-bold mb-0">{{ empresaSelecionada.nome }}</h5>
+            <span class="badge rounded-pill mt-2" [ngClass]="empresaSelecionada.ativo ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
+                {{ empresaSelecionada.ativo ? 'CONTRATO ATIVO' : 'BLOQUEADA' }}
+            </span>
+        </div>
+
+        <div class="detail-item mb-3">
+            <label class="text-muted small fw-bold d-block">CNPJ</label>
+            <span class="text-dark">{{ empresaSelecionada.cnpj || 'Não informado' }}</span>
+        </div>
+
+        <div class="detail-item mb-3">
+            <label class="text-muted small fw-bold d-block">Identificador (Tenant ID)</label>
+            <code class="text-primary fw-bold">#{{ empresaSelecionada.id }}</code>
+        </div>
+
+        <div class="alert alert-info border-0 small mt-4">
+            <i class="bi bi-lightbulb me-2"></i>
+            Como Super Admin, você pode gerenciar o acesso desta empresa e visualizar logs de auditoria cruzados.
+        </div>
+    </div>
+
+    <div class="p-4 border-top bg-light mt-auto">
+        <button class="btn btn-outline-danger w-100 rounded-pill fw-bold" (click)="fecharDetalhes()">
+            Fechar Visualização
+        </button>
+    </div>
+</div>
+
+<!-- OFFCANVAS FORM (Novo Tenant + Admin) -->
+<div class="custom-offcanvas" [class.show]="mostrarForm">
+    <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+        <div class="d-flex align-items-center gap-2">
+            <div class="icon-circle-sm bg-primary-subtle text-primary d-flex align-items-center justify-content-center rounded-circle" style="width: 32px; height: 32px;">
+                <i class="bi bi-plus-circle-fill"></i>
+            </div>
+            <h5 class="mb-0 fw-bold text-dark">Novo Onboarding</h5>
+        </div>
+        <button type="button" class="btn-close" (click)="fecharForm()"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4">
+        <!-- Notificações de Status -->
+        <div *ngIf="statusMsg" class="alert border-0 small py-2 mb-3 animate__animated animate__fadeIn" [ngClass]="'alert-' + statusType">
+            <i class="bi" [ngClass]="statusType === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"></i>
+            {{ statusMsg }}
+        </div>
+
+        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-building me-2"></i>Dados da Empresa</h6>
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Nome da Empresa</label>
+            <input type="text" class="form-control bg-light border-0" [(ngModel)]="novoTenant.nomeEmpresa" placeholder="Razão Social ou Fantasia">
+        </div>
+        <div class="mb-4">
+            <label class="form-label small fw-bold text-secondary">CNPJ</label>
+            <input type="text" class="form-control bg-light border-0" 
+                   [(ngModel)]="novoTenant.cnpj" 
+                   (input)="formatarCNPJ()" 
+                   maxlength="18"
+                   placeholder="00.000.000/0000-00">
+        </div>
+
+        <h6 class="fw-bold text-primary mb-3 mt-4"><i class="bi bi-person-badge me-2"></i>Administrador Inicial</h6>
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">E-mail do Admin</label>
+            <input type="email" class="form-control bg-light border-0" [(ngModel)]="novoTenant.emailAdmin" placeholder="admin@empresa.com.br">
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Username</label>
+            <input type="text" class="form-control bg-light border-0" [(ngModel)]="novoTenant.usernameAdmin" placeholder="admin.empresa">
+        </div>
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Senha Temporária</label>
+            <input type="password" class="form-control bg-light border-0" [(ngModel)]="novoTenant.senhaAdmin" placeholder="••••••••">
+        </div>
+    </div>
+
+    <div class="p-4 border-top bg-white">
+        <button class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm py-2" (click)="salvar()">
+            <i class="bi bi-cloud-upload me-2"></i> Ativar Empresa
+        </button>
+    </div>
+</div>

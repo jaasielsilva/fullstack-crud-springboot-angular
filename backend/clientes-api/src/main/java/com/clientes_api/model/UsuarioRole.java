@@ -2,6 +2,9 @@ package com.clientes_api.model;
 
 public enum UsuarioRole {
     ADMIN("admin"),
+    GERENTE("gerente"),
+    VENDEDOR("vendedor"),
+    SUPORTE("suporte"),
     USER("user");
 
     private String role;

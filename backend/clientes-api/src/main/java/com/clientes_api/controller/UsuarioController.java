@@ -12,20 +12,22 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-@Tag(name = "Usuários", description = "Endpoints de gestão de usuários do sistema")
 @RestController
 @RequestMapping("/api/usuarios")
+@Tag(name = "Usuários", description = "Endpoints de gerenciamento de usuários administrativos")
 public class UsuarioController {
 
     @Autowired
     private UsuarioRepository repository;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
     public ResponseEntity<List<Usuario>> listar() {
         return ResponseEntity.ok(repository.findAll());
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> criar(@RequestBody Usuario data) {
         if (repository.findByLogin(data.getLogin()) != null) {
             return ResponseEntity.badRequest().body(Map.of("erro", "E-mail já cadastrado."));
@@ -39,26 +41,34 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Usuario data) {
         return repository.findById(id).map(usuario -> {
             usuario.setLogin(data.getLogin());
             usuario.setUsername(data.getUsername());
             usuario.setRole(data.getRole());
             
-            // Só atualiza a senha se ela for enviada
-            if (data.getSenha() != null && !data.getSenha().isBlank()) {
+            if (data.getSenha() != null && !data.getSenha().isEmpty()) {
                 String encryptedPassword = new BCryptPasswordEncoder().encode(data.getSenha());
                 usuario.setSenha(encryptedPassword);
             }
             
-            repository.save(usuario);
-            return ResponseEntity.ok(usuario);
+            Usuario salvo = repository.save(usuario);
+            return ResponseEntity.ok(salvo);
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> excluir(@PathVariable Long id) {
+        // Busca o usuário logado para impedir a auto-exclusão
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String currentLogin = auth.getName();
+
         return repository.findById(id).map(usuario -> {
+            if (usuario.getLogin().equals(currentLogin)) {
+                return ResponseEntity.badRequest().body(Map.of("erro", "Você não pode excluir seu próprio usuário."));
+            }
             repository.delete(usuario);
             return ResponseEntity.ok().build();
         }).orElse(ResponseEntity.notFound().build());
