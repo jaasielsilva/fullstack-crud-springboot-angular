@@ -35,8 +35,15 @@ export class LoginComponent {
     this.authService.login(this.loginData).subscribe({
       next: () => {
         this.carregando = false;
-        // Se der sucesso, vai direto para o Dashboard
-        this.router.navigate(['/dashboard']);
+        const allowed = this.authService.hasRole(['ADMIN', 'GERENTE', 'VENDEDOR', 'SUPORTE']);
+        const userInfo = this.authService.getUserInfo();
+        if (userInfo?.mustChangePassword) {
+          this.router.navigate(['/reset-password-forced']);
+        } else if (allowed) {
+          this.router.navigate(['/dashboard']);
+        } else {
+          this.router.navigate(['/sem-permissao']);
+        }
       },
       error: (err: HttpErrorResponse) => {
         this.carregando = false;
