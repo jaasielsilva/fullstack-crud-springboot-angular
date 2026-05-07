@@ -8,16 +8,20 @@ import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password
 import { UsuariosComponent } from './pages/usuarios/usuarios.component';
 import { EmpresasComponent } from './pages/empresas/empresas.component';
 import { ResetPasswordForcedComponent } from './pages/reset-password-forced/reset-password-forced.component';
+import { AccessDeniedComponent } from './pages/access-denied/access-denied.component';
 import { authGuard } from './security/auth.guard';
+
+const ROLES_DASHBOARD = ['ADMIN', 'GERENTE', 'VENDEDOR', 'SUPORTE'];
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password-forced', component: ResetPasswordForcedComponent, canActivate: [authGuard] },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'clientes', component: ClientesComponent, canActivate: [authGuard] },
-  { path: 'produtos', component: ProdutosComponent, canActivate: [authGuard] },
+  { path: 'sem-permissao', component: AccessDeniedComponent, canActivate: [authGuard] },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard], data: { roles: ROLES_DASHBOARD } },
+  { path: 'clientes', component: ClientesComponent, canActivate: [authGuard], data: { roles: ROLES_DASHBOARD } },
+  { path: 'produtos', component: ProdutosComponent, canActivate: [authGuard], data: { roles: ROLES_DASHBOARD } },
   { path: 'empresas', component: EmpresasComponent, canActivate: [authGuard], data: { roles: ['ADMIN'] } },
   { path: 'configuracoes', component: ConfiguracoesComponent, canActivate: [authGuard], data: { roles: ['ADMIN'] } },
   { path: 'usuarios', component: UsuariosComponent, canActivate: [authGuard], data: { roles: ['ADMIN'] } }

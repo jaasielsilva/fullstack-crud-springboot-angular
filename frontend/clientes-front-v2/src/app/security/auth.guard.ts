@@ -24,8 +24,10 @@ export const authGuard: CanActivateFn = (route, state) => {
   if (expectedRoles && expectedRoles.length > 0) {
     const hasRole = authService.hasRole(expectedRoles);
     if (!hasRole) {
-      // Se não tem permissão, manda pro dashboard ou mostra erro
-      router.navigate(['/dashboard']);
+      // Sem permissao: manda para a tela informativa, evitando loop com 403 do dashboard
+      if (state.url !== '/sem-permissao') {
+        router.navigate(['/sem-permissao']);
+      }
       return false;
     }
   }

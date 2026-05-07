@@ -1,0 +1,22 @@
+<div class="access-denied">
+  <div class="card">
+    <div class="icon">!</div>
+    <h1>Acesso restrito</h1>
+    <p class="lead">
+      Você está autenticado, mas seu perfil
+      <strong *ngIf="userRole">{{ userRole }}</strong>
+      <strong *ngIf="!userRole">USER</strong>
+      não tem permissão para acessar esta área.
+    </p>
+
+    <div class="info">
+      <p><strong>Usuário:</strong> {{ userLogin }}</p>
+      <p>Se você acredita que deveria ter acesso, entre em contato com o administrador da sua empresa para solicitar a permissão correta.</p>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-secondary" (click)="voltar()">Voltar ao Dashboard</button>
+      <button type="button" class="btn-primary" (click)="sair()">Trocar de usuário</button>
+    </div>
+  </div>
+</div>
