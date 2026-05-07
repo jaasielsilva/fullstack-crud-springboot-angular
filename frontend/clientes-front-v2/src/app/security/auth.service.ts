@@ -38,6 +38,18 @@ export class AuthService {
     );
   }
 
+  // Reemite o token a partir da role/dados atuais do usuário no banco.
+  // Útil quando o ADMIN libera permissão e o usuário quer aproveitar
+  // o novo nível de acesso sem precisar deslogar e logar de novo.
+  refreshToken(): Observable<any> {
+    return this.http.post<{token: string}>(`${this.apiUrl}/refresh`, {}).pipe(
+      tap(response => {
+        localStorage.setItem('token', response.token);
+        this.loggedIn.next(true);
+      })
+    );
+  }
+
   logout(): void {
     localStorage.removeItem('token');
     this.loggedIn.next(false);

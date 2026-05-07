@@ -23,6 +23,20 @@ export class UsuariosComponent implements OnInit {
   // Controle do Modal de Confirmação
   showConfirmModal = false;
   idParaExcluir: number | null = null;
+
+  // Feedback rápido de troca de permissão
+  mensagemSucesso = '';
+  mensagemErro = '';
+  idTrocandoRole: number | null = null;
+
+  // Catálogo de roles disponíveis no sistema (espelha o enum do backend)
+  roles = [
+    { valor: 'ADMIN',    label: 'Administrador', descricao: 'Acesso total ao sistema',                  icone: 'bi-shield-lock-fill', classe: 'bg-danger-subtle text-danger' },
+    { valor: 'GERENTE',  label: 'Gerente',       descricao: 'Visualiza tudo e gerencia operação',       icone: 'bi-briefcase-fill',   classe: 'bg-warning-subtle text-warning' },
+    { valor: 'VENDEDOR', label: 'Vendedor',      descricao: 'Acesso a clientes, produtos e dashboard',  icone: 'bi-cart-check-fill',  classe: 'bg-success-subtle text-success' },
+    { valor: 'SUPORTE',  label: 'Suporte',       descricao: 'Atendimento e consultas operacionais',     icone: 'bi-headset',          classe: 'bg-info-subtle text-info' },
+    { valor: 'USER',     label: 'Sem permissão', descricao: 'Aguardando liberação do administrador',    icone: 'bi-person-fill',      classe: 'bg-secondary-subtle text-secondary' }
+  ];
   
   private apiUrl = `${environment.apiUrl}/api/usuarios`;
 
@@ -30,6 +44,10 @@ export class UsuariosComponent implements OnInit {
 
   isUsuarioLogado(login: string): boolean {
     return this.authService.getUserInfo().sub === login;
+  }
+
+  getRoleInfo(role: string) {
+    return this.roles.find(r => r.valor === role) || this.roles[this.roles.length - 1];
   }
 
   ngOnInit(): void {
@@ -83,6 +101,36 @@ export class UsuariosComponent implements OnInit {
         this.showConfirmModal = false;
         this.idParaExcluir = null;
       });
+    }
+  }
+
+  // Atalho usado pela linha da tabela para liberar/alterar a role rapidamente
+  alterarRoleRapido(usuario: any, novaRole: string) {
+    if (!novaRole || usuario.role === novaRole) return;
+
+    this.idTrocandoRole = usuario.id;
+    this.http.patch<any>(`${this.apiUrl}/${usuario.id}/role`, { role: novaRole }).subscribe({
+      next: (resp) => {
+        usuario.role = resp.role;
+        this.idTrocandoRole = null;
+        this.mostrarMensagem(`Permissão de ${usuario.username} atualizada para ${this.getRoleInfo(resp.role).label}.`, 'sucesso');
+      },
+      error: (err) => {
+        this.idTrocandoRole = null;
+        const msg = err?.error?.erro || 'Não foi possível alterar a permissão.';
+        this.mostrarMensagem(msg, 'erro');
+        this.listar();
+      }
+    });
+  }
+
+  private mostrarMensagem(texto: string, tipo: 'sucesso' | 'erro') {
+    if (tipo === 'sucesso') {
+      this.mensagemSucesso = texto;
+      setTimeout(() => this.mensagemSucesso = '', 3500);
+    } else {
+      this.mensagemErro = texto;
+      setTimeout(() => this.mensagemErro = '', 4500);
     }
   }
 

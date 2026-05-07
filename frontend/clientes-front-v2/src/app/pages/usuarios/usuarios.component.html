@@ -11,6 +11,27 @@
         </button>
     </div>
 
+    <!-- Toasts de feedback -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+        <div *ngIf="mensagemSucesso" class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill"></i> {{ mensagemSucesso }}
+        </div>
+        <div *ngIf="mensagemErro" class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i> {{ mensagemErro }}
+        </div>
+    </div>
+
+    <!-- Aviso pedagógico sobre o fluxo de permissão -->
+    <div class="alert alert-light border d-flex align-items-start gap-3 small mb-3 shadow-sm">
+        <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+        <div>
+            <strong class="text-dark">Como funciona a permissão?</strong>
+            Novos usuários começam como <span class="badge bg-secondary-subtle text-secondary">Sem permissão</span>
+            e não conseguem acessar nenhum módulo até que você (ADMIN) libere a role correta abaixo.
+            Você pode alterar a permissão direto pela coluna <em>Nível de Acesso</em>.
+        </div>
+    </div>
+
     <div class="card premium-card border-0 shadow-sm overflow-hidden">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 custom-table">
@@ -18,7 +39,7 @@
                     <tr>
                         <th class="ps-4 py-3 text-secondary small fw-bold">NOME / USERNAME</th>
                         <th class="py-3 text-secondary small fw-bold">E-MAIL (LOGIN)</th>
-                        <th class="py-3 text-secondary small fw-bold">NÍVEL DE ACESSO</th>
+                        <th class="py-3 text-secondary small fw-bold" style="min-width: 220px;">NÍVEL DE ACESSO</th>
                         <th class="py-3 text-secondary small fw-bold text-end pe-4">AÇÕES</th>
                     </tr>
                 </thead>
@@ -39,11 +60,23 @@
                         </td>
                         <td><span class="text-secondary small">{{ u.login }}</span></td>
                         <td>
-                            <span class="badge rounded-pill px-3 py-2 fw-bold" 
-                                  [ngClass]="u.role === 'ADMIN' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'">
-                                <i class="bi" [ngClass]="u.role === 'ADMIN' ? 'bi-shield-lock-fill' : 'bi-person-fill'"></i>
-                                {{ u.role }}
-                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill px-3 py-2 fw-bold" [ngClass]="getRoleInfo(u.role).classe">
+                                    <i class="bi" [ngClass]="getRoleInfo(u.role).icone"></i>
+                                    {{ getRoleInfo(u.role).label }}
+                                </span>
+
+                                <!-- Troca rápida de permissão -->
+                                <select
+                                    class="form-select form-select-sm role-quick-select"
+                                    [ngModel]="u.role"
+                                    (ngModelChange)="alterarRoleRapido(u, $event)"
+                                    [disabled]="idTrocandoRole === u.id"
+                                    [title]="isUsuarioLogado(u.login) ? 'Você não pode rebaixar seu próprio acesso' : 'Alterar permissão'">
+                                    <option *ngFor="let r of roles" [value]="r.valor">{{ r.label }}</option>
+                                </select>
+                                <span *ngIf="idTrocandoRole === u.id" class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                            </div>
                         </td>
                         <td class="text-end pe-4">
                             <div class="btn-group shadow-sm rounded-pill bg-light overflow-hidden">
@@ -93,12 +126,22 @@
             <label class="form-label small fw-bold text-secondary">Senha {{ isEditando ? '(Vazio para manter)' : '' }}</label>
             <input type="password" class="form-control bg-light border-0" [(ngModel)]="usuarioSelecionado.senha" name="senha" placeholder="••••••••">
         </div>
-        <div class="mb-4">
-            <label class="form-label small fw-bold text-secondary">Nível de Acesso</label>
-            <select class="form-select bg-light border-0" [(ngModel)]="usuarioSelecionado.role" name="role">
-                <option value="USER">Usuário (Padrão)</option>
-                <option value="ADMIN">Administrador (Total)</option>
-            </select>
+        <div class="mb-2">
+            <label class="form-label small fw-bold text-secondary d-block mb-2">Nível de Acesso</label>
+
+            <div class="role-cards">
+                <label *ngFor="let r of roles" class="role-card" [class.selected]="usuarioSelecionado.role === r.valor">
+                    <input type="radio" name="role" [value]="r.valor" [(ngModel)]="usuarioSelecionado.role" hidden>
+                    <span class="role-card-icon" [ngClass]="r.classe">
+                        <i class="bi" [ngClass]="r.icone"></i>
+                    </span>
+                    <span class="role-card-body">
+                        <span class="role-card-title">{{ r.label }}</span>
+                        <small class="role-card-desc text-muted">{{ r.descricao }}</small>
+                    </span>
+                    <i class="bi bi-check-circle-fill role-card-check text-primary"></i>
+                </label>
+            </div>
         </div>
     </div>
 
