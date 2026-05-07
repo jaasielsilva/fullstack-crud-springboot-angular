@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-configuracoes',
@@ -35,7 +36,7 @@ export class ConfiguracoesComponent implements OnInit {
     avisarBrowser: true
   };
 
-  private apiUrl = 'http://localhost:8080/api/config/email';
+  private apiUrl = `${environment.apiUrl}/api/config/email`;
 
   constructor(private http: HttpClient) {}
 

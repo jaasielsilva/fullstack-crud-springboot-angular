@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-empresas',
@@ -27,7 +28,7 @@ export class EmpresasComponent implements OnInit {
   empresaSelecionada: any = null;
   statusMsg = '';
   statusType: 'success' | 'danger' = 'success';
-  private apiUrl = 'http://localhost:8080/api/tenants';
+  private apiUrl = `${environment.apiUrl}/api/tenants`;
 
   constructor(private http: HttpClient) {}
 

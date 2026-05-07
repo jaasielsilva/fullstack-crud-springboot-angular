@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../security/auth.service';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-reset-password-forced',
@@ -39,7 +40,7 @@ export class ResetPasswordForcedComponent {
     }
 
     this.loading = true;
-    this.http.post('http://localhost:8080/api/auth/reset-password-forced', { novaSenha: this.senha })
+    this.http.post(`${environment.apiUrl}/api/auth/reset-password-forced`, { novaSenha: this.senha })
       .subscribe({
         next: () => {
           this.loading = false;

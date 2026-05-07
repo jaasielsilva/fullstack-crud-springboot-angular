@@ -1,0 +1,72 @@
+# ============================================================
+# Stack de HOMOLOGAÇÃO
+# Frontend: https://dev.erpcorporativo.shop   → container web-hml
+# API:      https://api.dev.erpcorporativo.shop → container api-hml
+#
+# TLS é terminado pelo Nginx do HOST (portas 80/443 já em uso).
+# Os serviços ficam só em 127.0.0.1 — não conflita com lavarapido (:8080/:8081).
+# ============================================================
+services:
+  mysql-hml:
+    image: mysql:8.0
+    container_name: mysql-hml
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_hml_data:/var/lib/mysql
+    networks:
+      - internal-hml
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api-hml:
+    image: ${API_IMAGE}
+    container_name: api-hml
+    restart: unless-stopped
+    depends_on:
+      mysql-hml:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: hml
+      DB_HOST: mysql-hml
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_CORS_ALLOWED_ORIGINS: https://dev.erpcorporativo.shop
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    networks:
+      - internal-hml
+    ports:
+      # Nginx do host faz proxy_pass para esta porta (loopback apenas)
+      - "127.0.0.1:${HOST_PORT_API_HML:-9101}:8080"
+
+  web-hml:
+    image: ${WEB_IMAGE}
+    container_name: web-hml
+    restart: unless-stopped
+    depends_on:
+      - api-hml
+    networks:
+      - internal-hml
+    ports:
+      - "127.0.0.1:${HOST_PORT_WEB_HML:-9102}:80"
+
+volumes:
+  mysql_hml_data:
+
+networks:
+  internal-hml:
+    driver: bridge

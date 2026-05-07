@@ -1,0 +1,145 @@
+# ============================================================
+# DEPLOY HML — branch dev
+# 1) Build das imagens Docker (api e web)
+# 2) Push no GHCR com tags :hml e :hml-<sha>
+# 3) SSH na VPS e atualiza o stack /opt/erpcorporativo/hml
+# 4) Notifica Telegram em cada etapa (start/success/failure)
+# ============================================================
+name: Deploy HML
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-hml
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_API: ${{ github.repository_owner }}/erpcorporativo-api
+  IMAGE_WEB: ${{ github.repository_owner }}/erpcorporativo-web
+  TAG_ENV: hml
+
+jobs:
+  # ----------------------------------------------------------
+  notify-start:
+    name: Notify start
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/telegram-notify
+        with:
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          status: start
+          title: "Deploy HML iniciado"
+          message: "Branch dev → ambiente https://dev.erpcorporativo.shop"
+
+  # ----------------------------------------------------------
+  build-and-push:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    needs: notify-start
+    outputs:
+      sha_short: ${{ steps.meta.outputs.sha_short }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        id: meta
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push API
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/clientes-api
+          file: backend/clientes-api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:${{ env.TAG_ENV }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:${{ env.TAG_ENV }}-${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha,scope=api-hml
+          cache-to: type=gha,scope=api-hml,mode=max
+
+      - name: Build & push Web
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend/clientes-front-v2
+          file: frontend/clientes-front-v2/Dockerfile
+          build-args: |
+            BUILD_CONFIG=hml
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:${{ env.TAG_ENV }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:${{ env.TAG_ENV }}-${{ steps.meta.outputs.sha_short }}
+          cache-from: type=gha,scope=web-hml
+          cache-to: type=gha,scope=web-hml,mode=max
+
+  # ----------------------------------------------------------
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            cd /opt/erpcorporativo/hml
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+
+  # ----------------------------------------------------------
+  notify-result:
+    name: Notify result
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute status
+        id: s
+        run: |
+          if [ "${{ needs.build-and-push.result }}" = "success" ] && [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+            echo "title=Deploy HML concluído" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failure" >> "$GITHUB_OUTPUT"
+            echo "title=Deploy HML falhou" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: ./.github/actions/telegram-notify
+        with:
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          status: ${{ steps.s.outputs.status }}
+          title: ${{ steps.s.outputs.title }}
+          message: |
+            Build: ${{ needs.build-and-push.result }}
+            Deploy: ${{ needs.deploy.result }}
+            URL: https://dev.erpcorporativo.shop
+            API: https://api.dev.erpcorporativo.shop

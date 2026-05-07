@@ -96,6 +96,17 @@ ng serve
 ```
 *App will be available at `http://localhost:4200`*
 
+## 🐳 Docker & Deploy
+
+A aplicação está dockerizada e preparada para CI/CD em VPS única com dois ambientes:
+
+| Ambiente | Frontend | API | Branch |
+|---|---|---|---|
+| Produção | `https://erpcorporativo.shop` | `https://api.erpcorporativo.shop` | `main` |
+| Homologação | `https://dev.erpcorporativo.shop` | `https://api.dev.erpcorporativo.shop` | `dev` |
+
+Reverse proxy com **Nginx no host** + Let's Encrypt (Certbot), MySQL isolado por ambiente, GitHub Actions publicando imagens no GHCR e deploy via SSH, com notificações no Telegram. Passo a passo em [`deploy/README.md`](deploy/README.md).
+
 ## 🔌 API Endpoints
 
 ### Clients — `/api/clientes`
