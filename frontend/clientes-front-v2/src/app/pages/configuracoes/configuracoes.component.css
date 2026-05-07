@@ -1,18 +1,33 @@
-.card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border-radius: 12px;
+.settings-nav .nav-link {
+    color: #6c757d;
+    padding: 0.8rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    transition: all 0.2s;
 }
 
-.card:hover {
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+.settings-nav .nav-link:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
 }
 
-.icon-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
+.settings-nav .nav-link.active {
+    background-color: #0d6efd;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
+}
+
+.settings-nav .nav-link i {
+    font-size: 1.1rem;
+}
+
+.premium-card {
+    border-radius: 15px;
+}
+
+.animate__animated {
+    animation-duration: 0.4s;
 }
 
 .form-label {
