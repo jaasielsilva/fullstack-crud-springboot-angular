@@ -1,6 +1,7 @@
 package com.clientes_api.security;
 
 import com.clientes_api.config.TenantContext;
+import com.clientes_api.model.Usuario;
 import com.clientes_api.repository.UsuarioRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -34,22 +35,22 @@ public class SecurityFilter extends OncePerRequestFilter {
         
         try {
             if (token != null) {
-                var login = tokenService.validarToken(token);
-                Long tenantId = tokenService.getTenantIdFromToken(token);
-                
-                if (tenantId != null) {
-                    TenantContext.setCurrentTenant(tenantId);
-                    logger.debug("Tenant identificado: {} para o usuário: {}", tenantId, login);
-                } else {
-                    logger.warn("Token detectado, mas TenantId está ausente!");
-                }
-                
+                String login = tokenService.validarToken(token);
                 if (login != null && !login.isEmpty()) {
-                    UserDetails user = usuarioRepository.findByLogin(login);
-                    
-                    if (user != null) {
-                        var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    Usuario usuario = usuarioRepository.findByLoginOrUsernameGlobal(login);
+                    if (usuario != null) {
+                        Long tenantFromToken = tokenService.getTenantIdFromToken(token);
+                        Long tenantIdUsuario = usuario.getTenantId();
+                        if (tenantFromToken != null && tenantIdUsuario != null
+                                && !tenantFromToken.equals(tenantIdUsuario)) {
+                            logger.warn("Token rejeitado: tenantId do JWT não confere com o usuário (login={})", login);
+                        } else {
+                            TenantContext.setCurrentTenant(tenantIdUsuario);
+                            logger.debug("Auth JWT: login={}, tenant={}", login, tenantIdUsuario);
+                            UserDetails user = usuario;
+                            var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        }
                     }
                 }
             }
