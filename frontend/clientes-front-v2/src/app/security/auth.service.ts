@@ -13,6 +13,24 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {}
 
+  private decodeJwtPayload(token: string): any | null {
+    try {
+      const payloadBase64Url = token.split('.')[1];
+      if (!payloadBase64Url) return null;
+      const payloadBase64 = payloadBase64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = payloadBase64 + '='.repeat((4 - (payloadBase64.length % 4)) % 4);
+      return JSON.parse(atob(padded));
+    } catch (e) {
+      console.error('Erro ao decodificar token', e);
+      return null;
+    }
+  }
+
+  private normalizeRole(role: string | null | undefined): string {
+    if (!role) return '';
+    return role.toUpperCase().replace(/^ROLE_/, '').trim();
+  }
+
   // Observable para a interface reagir a mudanças de login/logout
   isLoggedIn$(): Observable<boolean> {
     return this.loggedIn.asObservable();
@@ -60,38 +78,27 @@ export class AuthService {
   getRole(): string | null {
     const token = this.getToken();
     if (!token) return null;
-    try {
-      // O JWT é composto por Header.Payload.Signature. O payload é a parte 1.
-      const payloadBase64 = token.split('.')[1];
-      const payloadJson = JSON.parse(atob(payloadBase64));
-      return payloadJson.role || null;
-    } catch (e) {
-      console.error('Erro ao decodificar token', e);
-      return null;
-    }
+    const payloadJson = this.decodeJwtPayload(token);
+    return payloadJson?.role ?? null;
   }
 
   // Verifica se o usuário tem alguma das roles permitidas
   hasRole(allowedRoles: string[]): boolean {
-    const userRole = this.getRole();
+    const userRole = this.normalizeRole(this.getRole());
     if (!userRole) return false;
-    return allowedRoles.includes(userRole);
+    const normalizedAllowedRoles = allowedRoles.map(r => this.normalizeRole(r));
+    return normalizedAllowedRoles.includes(userRole);
   }
 
   getUserInfo(): any {
     const token = this.getToken();
     if (!token) return { sub: 'Visitante', role: 'USER' };
-    try {
-      const payloadBase64 = token.split('.')[1];
-      return JSON.parse(atob(payloadBase64));
-    } catch (e) {
-      return { sub: 'Erro', role: 'USER' };
-    }
+    return this.decodeJwtPayload(token) ?? { sub: 'Erro', role: 'USER' };
   }
 
   // Super Admin é o administrador da Matriz (Tenant ID: 1)
   isSuperAdmin(): boolean {
     const info = this.getUserInfo();
-    return info.role === 'ADMIN' && info.tenantId === 1;
+    return this.normalizeRole(info?.role) === 'ADMIN' && info?.tenantId === 1;
   }
 }
