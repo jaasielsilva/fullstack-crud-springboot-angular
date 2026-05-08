@@ -1,22 +1,40 @@
 <div class="access-denied">
   <div class="card">
-    <div class="icon">!</div>
+    <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
     <h1>Acesso restrito</h1>
     <p class="lead">
       Você está autenticado, mas seu perfil
-      <strong *ngIf="userRole">{{ userRole }}</strong>
-      <strong *ngIf="!userRole">USER</strong>
-      não tem permissão para acessar esta área.
+      <strong>{{ userRole || 'USER' }}</strong>
+      ainda não tem permissão para acessar esta área.
     </p>
 
     <div class="info">
       <p><strong>Usuário:</strong> {{ userLogin }}</p>
-      <p>Se você acredita que deveria ter acesso, entre em contato com o administrador da sua empresa para solicitar a permissão correta.</p>
+      <p><strong>Nível atual:</strong> {{ userRole || 'USER' }} <span class="muted">(sem acesso aos módulos)</span></p>
+    </div>
+
+    <div class="steps">
+      <p class="steps-title">O que fazer agora?</p>
+      <ol>
+        <li>Solicite ao <strong>administrador</strong> da sua empresa que libere uma role para você (Gerente, Vendedor, Suporte ou Admin).</li>
+        <li>Quando ele confirmar, clique em <em>“Já liberaram, verificar novamente”</em> que o sistema atualiza seu acesso na hora.</li>
+      </ol>
+    </div>
+
+    <div *ngIf="mensagem" class="msg" [class.msg-erro]="tipoMensagem === 'erro'" [class.msg-info]="tipoMensagem === 'info'">
+      <i class="bi" [class.bi-exclamation-triangle-fill]="tipoMensagem === 'erro'" [class.bi-check-circle-fill]="tipoMensagem === 'info'"></i>
+      {{ mensagem }}
     </div>
 
     <div class="actions">
       <button type="button" class="btn-secondary" (click)="voltar()">Voltar ao Dashboard</button>
-      <button type="button" class="btn-primary" (click)="sair()">Trocar de usuário</button>
+      <button type="button" class="btn-warning" (click)="recarregar()" [disabled]="verificando" title="Atualiza seu nível de acesso sem precisar deslogar">
+        <i class="bi" [class.bi-arrow-clockwise]="!verificando" [class.bi-hourglass-split]="verificando"></i>
+        {{ verificando ? 'Verificando...' : 'Já liberaram, verificar novamente' }}
+      </button>
+      <button type="button" class="btn-primary" (click)="sair()">
+        <i class="bi bi-box-arrow-right"></i> Trocar de usuário
+      </button>
     </div>
   </div>
 </div>

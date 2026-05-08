@@ -11,7 +11,7 @@
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-  max-width: 520px;
+  max-width: 560px;
   width: 100%;
   padding: 40px 36px;
   text-align: center;
@@ -23,8 +23,7 @@
   border-radius: 50%;
   background: #fef3c7;
   color: #b45309;
-  font-size: 38px;
-  font-weight: 800;
+  font-size: 32px;
   margin: 0 auto 16px;
   display: flex;
   align-items: center;
@@ -54,7 +53,7 @@ h1 {
   border-radius: 10px;
   padding: 14px 16px;
   text-align: left;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
   color: #374151;
   font-size: 14px;
   line-height: 1.5;
@@ -62,6 +61,62 @@ h1 {
 
 .info p {
   margin: 4px 0;
+}
+
+.info .muted {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.steps {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 14px 18px;
+  text-align: left;
+  margin-bottom: 18px;
+  color: #1e3a8a;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.steps-title {
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: #1e40af;
+}
+
+.steps ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.steps li {
+  margin-bottom: 4px;
+}
+
+.msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.msg-info {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.msg-erro {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 .actions {
@@ -72,14 +127,18 @@ h1 {
 }
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-warning {
   border: 0;
   padding: 10px 18px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s ease, background 0.15s ease;
+  transition: transform 0.1s ease, background 0.15s ease, opacity 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .btn-primary {
@@ -89,6 +148,20 @@ h1 {
 
 .btn-primary:hover {
   background: #1d4ed8;
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.btn-warning:hover {
+  background: #d97706;
+}
+
+.btn-warning:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .btn-secondary {
@@ -101,6 +174,7 @@ h1 {
 }
 
 .btn-primary:active,
-.btn-secondary:active {
+.btn-secondary:active,
+.btn-warning:active {
   transform: translateY(1px);
 }
