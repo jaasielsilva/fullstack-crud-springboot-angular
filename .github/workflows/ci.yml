@@ -54,8 +54,15 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
-      - name: Build & test
-        run: ./mvnw -B -e -ntp clean verify
+      - name: Build & test (retry on transient network failure)
+        run: |
+          for attempt in 1 2 3; do
+            ./mvnw -B -e -ntp clean verify && exit 0
+            echo "Maven build failed on attempt ${attempt}. Retrying..."
+            sleep 10
+          done
+          echo "Maven build failed after 3 attempts."
+          exit 1
 
       - name: Upload jar
         if: success()
