@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { DashboardService } from '../dashboard/dashboard.service';
+import { AuthService } from '../../security/auth.service';
 
 @Component({
   selector: 'app-configuracoes',
@@ -36,12 +38,27 @@ export class ConfiguracoesComponent implements OnInit {
     avisarBrowser: true
   };
 
+  dashboardMetaConfig: { escopo: 'USER' | 'ROLE' | 'GLOBAL'; alvo: string; metaReceita: number } = {
+    escopo: 'ROLE',
+    alvo: 'GERENTE',
+    metaReceita: 50000
+  };
+
+  rolesDisponiveis = ['ADMIN', 'GERENTE', 'VENDEDOR', 'SUPORTE'];
+  isAdmin = false;
+
   private apiUrl = `${environment.apiUrl}/api/config/email`;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private dashboardService: DashboardService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
+    this.isAdmin = this.authService.getRole() === 'ADMIN';
     this.carregarConfiguracao();
+    this.carregarMetaDashboard();
   }
 
   carregarConfiguracao() {
@@ -73,6 +90,44 @@ export class ConfiguracoesComponent implements OnInit {
         this.mensagemErro = 'Erro ao salvar configurações de e-mail.';
         this.carregando = false;
         console.error(err);
+      }
+    });
+  }
+
+  carregarMetaDashboard(): void {
+    this.dashboardService.buscarMeta().subscribe({
+      next: (data) => {
+        this.dashboardMetaConfig = {
+          escopo: data.escopo,
+          alvo: data.alvo,
+          metaReceita: data.metaReceita
+        };
+      }
+    });
+  }
+
+  salvarMetaDashboard(): void {
+    this.carregando = true;
+    this.mensagemSucesso = '';
+    this.mensagemErro = '';
+
+    this.dashboardService.salvarMeta({
+      escopo: this.dashboardMetaConfig.escopo,
+      alvo: this.dashboardMetaConfig.alvo,
+      metaReceita: this.dashboardMetaConfig.metaReceita
+    }).subscribe({
+      next: (resp) => {
+        this.dashboardMetaConfig = {
+          escopo: resp.escopo,
+          alvo: resp.alvo,
+          metaReceita: resp.metaReceita
+        };
+        this.mensagemSucesso = 'Meta do dashboard salva com sucesso!';
+        this.carregando = false;
+      },
+      error: () => {
+        this.mensagemErro = 'Erro ao salvar meta do dashboard.';
+        this.carregando = false;
       }
     });
   }

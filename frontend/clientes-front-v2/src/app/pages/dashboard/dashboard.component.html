@@ -1,61 +1,288 @@
 <div class="container-fluid dashboard-container">
-  <!-- Cabeçalho da Página Compacto -->
   <div class="d-flex align-items-end justify-content-between mb-3 border-bottom pb-2">
     <div class="d-flex align-items-center gap-2">
-      <i class="bi bi-grid-1x2 fs-4 text-primary"></i>
-      <h4 class="fw-bold text-dark mb-0">Painel Geral</h4>
+      <i class="bi bi-graph-up-arrow fs-4 text-primary"></i>
+      <h4 class="fw-bold text-dark mb-0">Dashboard Executivo</h4>
     </div>
-    <small class="text-muted d-none d-md-block">Visão estratégica do seu negócio</small>
+    <div class="d-flex align-items-center gap-2">
+      <small class="text-muted d-none d-lg-block">Visão consolidada de performance e operação</small>
+      <button class="btn btn-sm btn-outline-primary rounded-pill" (click)="exportarResumoPdf()">
+        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+      </button>
+    </div>
   </div>
 
-  <!-- Loading spinner (mostra enquanto os dados não chegam) -->
   <div *ngIf="carregando" class="text-center py-5">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Carregando...</span>
     </div>
   </div>
 
-  <!-- Cards (Mostra apenas quando carregar terminar) -->
-  <div *ngIf="!carregando" class="row g-3">
-    
-    <!-- Card de Clientes -->
-    <div class="col-sm-6 col-md-4 col-lg-3">
-      <div class="card premium-card border-0 shadow-sm h-100">
-        <div class="card-body p-3">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="card-title text-secondary fw-bold mb-0">Total de Clientes</h6>
-            <div class="icon-circle bg-primary-subtle text-primary">
-              <i class="bi bi-people-fill"></i>
+  <div *ngIf="!carregando">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <button class="btn btn-sm rounded-pill period-btn" [class.active]="periodoSelecionado === 'hoje'" (click)="selecionarPeriodo('hoje')">Hoje</button>
+      <button class="btn btn-sm rounded-pill period-btn" [class.active]="periodoSelecionado === '7d'" (click)="selecionarPeriodo('7d')">7 dias</button>
+      <button class="btn btn-sm rounded-pill period-btn" [class.active]="periodoSelecionado === '30d'" (click)="selecionarPeriodo('30d')">30 dias</button>
+      <button class="btn btn-sm rounded-pill period-btn" [class.active]="periodoSelecionado === 'mes'" (click)="selecionarPeriodo('mes')">Mês atual</button>
+      <span class="period-label text-muted ms-lg-auto align-self-center">{{ labelPeriodo() }}</span>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <span class="badge text-bg-light border">Meta: {{ metaReceita | currency:'BRL' }}</span>
+      <span class="badge text-bg-light border">Escopo da meta: {{ metaEscopo }} ({{ metaAlvo }})</span>
+      <span class="badge border" [ngClass]="semaforoClasse(semaforoReceita)">
+        Receita
+      </span>
+      <span class="badge border" [ngClass]="semaforoClasse(semaforoEstoque)">Estoque</span>
+      <span class="badge border" [ngClass]="semaforoClasse(semaforoPedidos)">Pedidos</span>
+    </div>
+
+    <div *ngIf="erroCarregamento" class="alert alert-warning mb-3">
+      {{ erroCarregamento }}
+    </div>
+
+    <div class="row g-3 mb-1">
+      <div class="col-sm-6 col-lg-3">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="card-title text-secondary fw-bold mb-0">Receita Total</h6>
+              <div class="icon-circle bg-success-subtle text-success">
+                <i class="bi bi-currency-dollar"></i>
+              </div>
+            </div>
+            <p class="metric-value fw-bold text-dark mb-0">{{ faturamentoTotal | currency:'BRL' }}</p>
+            <p class="mb-0">
+              <small class="trend-badge" [ngClass]="variacaoClasse(variacaoPercentual(faturamentoTotal, faturamentoPeriodoAnterior))">
+                <i class="bi" [ngClass]="variacaoIcone(variacaoPercentual(faturamentoTotal, faturamentoPeriodoAnterior))"></i>
+                {{ variacaoPercentual(faturamentoTotal, faturamentoPeriodoAnterior) | number:'1.0-1' }}% vs período anterior
+              </small>
+            </p>
+            <div class="sparkline-wrap mt-2">
+              <svg viewBox="0 0 120 34" preserveAspectRatio="none" class="sparkline">
+                <polyline [attr.points]="sparklinePoints(receitaSerie, 120, 34)" class="sparkline-line sparkline-receita"></polyline>
+                <g *ngFor="let p of receitaSpark">
+                  <circle [attr.cx]="p.x" [attr.cy]="p.y" r="1.8" class="spark-dot spark-dot-receita">
+                    <title>{{ p.label }} • {{ p.value | currency:'BRL' }}</title>
+                  </circle>
+                </g>
+              </svg>
             </div>
           </div>
-          <!-- Texto menor com fs-2 ao invés de display-4 -->
-          <h2 class="fs-2 fw-bold text-dark mb-0">{{ totalClientes }}</h2>
-          <p class="text-muted mb-0"><small style="font-size: 0.75rem;">clientes registrados</small></p>
         </div>
-        <div class="card-footer bg-transparent border-0 px-3 pb-3 mt-auto">
-          <a routerLink="/clientes" class="btn btn-sm btn-outline-primary w-100 rounded-pill">Gerenciar</a>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="card-title text-secondary fw-bold mb-0">Ticket Médio</h6>
+              <div class="icon-circle bg-info-subtle text-info">
+                <i class="bi bi-receipt-cutoff"></i>
+              </div>
+            </div>
+            <p class="metric-value fw-bold text-dark mb-0">{{ ticketMedio | currency:'BRL' }}</p>
+            <p class="text-muted mb-0"><small>valor médio por pedido</small></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="card-title text-secondary fw-bold mb-0">Total de Pedidos</h6>
+              <div class="icon-circle bg-primary-subtle text-primary">
+                <i class="bi bi-cart-check"></i>
+              </div>
+            </div>
+            <p class="metric-value fw-bold text-dark mb-0">{{ totalPedidos }}</p>
+            <p class="mb-0">
+              <small class="trend-badge" [ngClass]="variacaoClasse(variacaoPercentual(totalPedidos, pedidosPeriodoAnterior))">
+                <i class="bi" [ngClass]="variacaoIcone(variacaoPercentual(totalPedidos, pedidosPeriodoAnterior))"></i>
+                {{ variacaoPercentual(totalPedidos, pedidosPeriodoAnterior) | number:'1.0-1' }}% vs período anterior
+              </small>
+            </p>
+            <div class="sparkline-wrap mt-2">
+              <svg viewBox="0 0 120 34" preserveAspectRatio="none" class="sparkline">
+                <polyline [attr.points]="sparklinePoints(pedidosSerie, 120, 34)" class="sparkline-line sparkline-pedidos"></polyline>
+                <g *ngFor="let p of pedidosSpark">
+                  <circle [attr.cx]="p.x" [attr.cy]="p.y" r="1.8" class="spark-dot spark-dot-pedidos">
+                    <title>{{ p.label }} • {{ p.value }} pedido(s)</title>
+                  </circle>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-lg-3">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="card-title text-secondary fw-bold mb-0">Clientes Ativos</h6>
+              <div class="icon-circle bg-warning-subtle text-warning">
+                <i class="bi bi-people-fill"></i>
+              </div>
+            </div>
+            <p class="metric-value fw-bold text-dark mb-0">{{ clientesAtivos }}</p>
+            <p class="text-muted mb-0"><small>{{ totalClientes }} clientes cadastrados</small></p>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Card de Produtos -->
-    <div class="col-sm-6 col-md-4 col-lg-3">
-      <div class="card premium-card border-0 shadow-sm h-100 bg-primary text-white">
-        <div class="card-body p-3">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="card-title text-light fw-bold mb-0">Total de Produtos</h6>
-            <div class="icon-circle bg-white text-primary">
-              <i class="bi bi-box-seam-fill"></i>
+    <div class="row g-3 mt-1" *ngIf="alertasExecutivos.length > 0">
+      <div class="col-12">
+        <div class="card premium-card border-0 shadow-sm">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+              <h6 class="fw-bold mb-0">Alertas Executivos</h6>
+            </div>
+            <div class="alert-list">
+              <span class="badge text-bg-light border" *ngFor="let alerta of alertasExecutivos">{{ alerta }}</span>
             </div>
           </div>
-          <h2 class="fs-2 fw-bold text-white mb-0">{{ totalProdutos }}</h2>
-          <p class="text-light mb-0"><small style="font-size: 0.75rem;">produtos no catálogo</small></p>
-        </div>
-        <div class="card-footer border-0 px-3 pb-3 mt-auto" style="background: transparent;">
-          <a routerLink="/produtos" class="btn btn-sm btn-light w-100 rounded-pill fw-bold text-primary">Acessar</a>
         </div>
       </div>
     </div>
 
+    <div class="row g-3 mt-1">
+      <div class="col-xl-4">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-0 p-3 pb-0">
+            <h6 class="fw-bold text-dark mb-1">Saúde Operacional</h6>
+            <small class="text-muted">Indicadores críticos para decisão rápida</small>
+          </div>
+          <div class="card-body p-3">
+            <div class="metric-row">
+              <span>Produtos ativos</span>
+              <strong>{{ produtosAtivos }} / {{ totalProdutos }}</strong>
+            </div>
+            <div class="metric-row">
+              <span>Baixo estoque (até 10 un.)</span>
+              <strong [class.text-danger]="produtosBaixoEstoque > 0">{{ produtosBaixoEstoque }}</strong>
+            </div>
+            <div class="metric-row">
+              <span>Pedidos em aberto</span>
+              <strong [class.text-warning]="pedidosAbertos > 0">{{ pedidosAbertos }}</strong>
+            </div>
+            <div class="metric-row">
+              <span>Clientes ativos</span>
+              <strong>{{ clientesAtivos }}</strong>
+            </div>
+          </div>
+          <div class="card-footer bg-transparent border-0 p-3 pt-0 d-grid gap-2">
+            <a routerLink="/pedidos" class="btn btn-sm btn-primary rounded-pill">Ir para pedidos</a>
+            <a routerLink="/produtos" class="btn btn-sm btn-outline-secondary rounded-pill">Revisar estoque</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-0 p-3 pb-0">
+            <h6 class="fw-bold text-dark mb-1">Top Clientes</h6>
+            <small class="text-muted">Maiores compradores por receita</small>
+          </div>
+          <div class="card-body p-3">
+            <div *ngIf="topClientes.length === 0" class="empty-state">Sem dados de vendas ainda.</div>
+            <div *ngFor="let cliente of topClientes; let i = index" class="rank-row">
+              <div class="d-flex align-items-center gap-2">
+                <span class="rank-pill">{{ i + 1 }}</span>
+                <span class="fw-semibold">{{ cliente.nome }}</span>
+              </div>
+              <strong>{{ cliente.total | currency:'BRL' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-0 p-3 pb-0">
+            <h6 class="fw-bold text-dark mb-1">Top Produtos Vendidos</h6>
+            <small class="text-muted">Ranking por volume</small>
+          </div>
+          <div class="card-body p-3">
+            <div *ngIf="topProdutos.length === 0" class="empty-state">Sem itens vendidos ainda.</div>
+            <div *ngFor="let produto of topProdutos; let i = index" class="rank-row">
+              <div class="d-flex align-items-center gap-2">
+                <span class="rank-pill">{{ i + 1 }}</span>
+                <span class="fw-semibold">{{ produto.nome }}</span>
+              </div>
+              <strong>{{ produto.quantidade }} un.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-4">
+        <div class="card premium-card border-0 shadow-sm h-100">
+          <div class="card-header bg-transparent border-0 p-3 pb-0">
+            <h6 class="fw-bold text-dark mb-1">Top Variações</h6>
+            <small class="text-muted">Produtos que mais subiram/caíram</small>
+          </div>
+          <div class="card-body p-3">
+            <div *ngIf="topVariacoes.length === 0" class="empty-state">Sem variações no período.</div>
+            <div *ngFor="let v of topVariacoes" class="rank-row">
+              <div class="d-flex flex-column">
+                <span class="fw-semibold">{{ v.produto }}</span>
+                <small class="text-muted">Atual: {{ v.atual }} | Anterior: {{ v.anterior }}</small>
+              </div>
+              <strong [class.text-success]="v.delta > 0" [class.text-danger]="v.delta < 0">
+                {{ v.delta > 0 ? '+' : '' }}{{ v.delta }}
+              </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-12">
+        <div class="card premium-card border-0 shadow-sm">
+          <div class="card-header bg-transparent border-0 p-3 pb-0">
+            <h6 class="fw-bold text-dark mb-1">Pedidos Recentes</h6>
+            <small class="text-muted">Últimas movimentações comerciais</small>
+          </div>
+          <div class="card-body p-0">
+            <div *ngIf="pedidosRecentes.length === 0" class="empty-state p-3">Nenhum pedido registrado.</div>
+            <div class="table-responsive" *ngIf="pedidosRecentes.length > 0">
+              <table class="table table-hover align-middle mb-0 custom-table">
+                <thead class="table-light">
+                  <tr>
+                    <th class="ps-3">Pedido</th>
+                    <th>Cliente</th>
+                    <th>Status</th>
+                    <th>Valor</th>
+                    <th class="pe-3">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let pedido of pedidosRecentes">
+                    <td class="ps-3 fw-semibold">#{{ pedido.id }}</td>
+                    <td>{{ pedido.cliente }}</td>
+                    <td>
+                      <span class="badge rounded-pill px-2 py-1"
+                        [class.bg-warning-subtle]="pedido.status === 'ABERTO'"
+                        [class.text-warning]="pedido.status === 'ABERTO'"
+                        [class.bg-success-subtle]="pedido.status !== 'ABERTO'"
+                        [class.text-success]="pedido.status !== 'ABERTO'">
+                        {{ pedido.status }}
+                      </span>
+                    </td>
+                    <td class="fw-bold">{{ pedido.valorTotal | currency:'BRL' }}</td>
+                    <td class="pe-3">{{ pedido.dataPedido | date:'dd/MM/yyyy HH:mm' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>

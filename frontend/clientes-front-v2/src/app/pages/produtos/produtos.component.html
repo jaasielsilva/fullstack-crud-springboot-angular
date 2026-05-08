@@ -136,11 +136,25 @@
       </div>
       <div class="col-6">
         <label class="form-label fw-semibold text-secondary small mb-1">Preço (R$) <span class="text-danger">*</span></label>
-        <input type="number" class="form-control bg-light border-0" [(ngModel)]="form.preco" min="0" step="0.01" placeholder="0.00">
+        <input
+          type="text"
+          inputmode="decimal"
+          class="form-control bg-light border-0"
+          [ngModel]="precoInput"
+          (ngModelChange)="onPrecoChange($event)"
+          (blur)="onPrecoBlur()"
+          placeholder="0,00">
       </div>
       <div class="col-6">
         <label class="form-label fw-semibold text-secondary small mb-1">Estoque</label>
-        <input type="number" class="form-control bg-light border-0" [(ngModel)]="form.quantidade" min="0" placeholder="Qtd">
+        <input
+          type="text"
+          inputmode="numeric"
+          class="form-control bg-light border-0"
+          [ngModel]="quantidadeInput"
+          (ngModelChange)="onQuantidadeChange($event)"
+          (blur)="onQuantidadeBlur()"
+          placeholder="0">
       </div>
       <div class="col-12 mt-4">
         <div class="form-check form-switch custom-switch p-0 d-flex align-items-center justify-content-between">

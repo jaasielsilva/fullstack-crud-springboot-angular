@@ -16,6 +16,8 @@ export class ProdutosComponent implements OnInit {
   produtos: Produto[] = [];
   form: Produto = this.formVazio();
   editandoId: number | null = null;
+  precoInput = '0,00';
+  quantidadeInput = '0';
   
   // UX State
   carregando = false;
@@ -84,6 +86,7 @@ export class ProdutosComponent implements OnInit {
   editar(produto: Produto): void {
     this.editandoId = produto.id!;
     this.form = { ...produto };
+    this.sincronizarCamposDigitacao();
     this.mensagem = '';
     this.mostrarForm = true; // Abre o painel
   }
@@ -102,10 +105,47 @@ export class ProdutosComponent implements OnInit {
   resetar(): void {
     this.form = this.formVazio();
     this.editandoId = null;
+    this.sincronizarCamposDigitacao();
+  }
+
+  onPrecoChange(valor: string): void {
+    const digits = (valor ?? '').replace(/\D/g, '');
+    const cents = digits ? Number.parseInt(digits, 10) : 0;
+    const preco = cents / 100;
+
+    this.form.preco = Number.isFinite(preco) ? preco : 0;
+    this.precoInput = this.formatarPreco(this.form.preco);
+  }
+
+  onPrecoBlur(): void {
+    this.precoInput = this.formatarPreco(this.form.preco);
+  }
+
+  onQuantidadeChange(valor: string): void {
+    const digits = (valor ?? '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    this.quantidadeInput = digits;
+    this.form.quantidade = digits ? Number.parseInt(digits, 10) : 0;
+  }
+
+  onQuantidadeBlur(): void {
+    this.quantidadeInput = `${this.form.quantidade ?? 0}`;
   }
 
   private formVazio(): Produto {
     return { nome: '', descricao: '', preco: 0, quantidade: 0, ativo: true };
+  }
+
+  private sincronizarCamposDigitacao(): void {
+    this.precoInput = this.formatarPreco(this.form.preco);
+    this.quantidadeInput = `${this.form.quantidade ?? 0}`;
+  }
+
+  private formatarPreco(valor: number | undefined): string {
+    const numero = Number.isFinite(valor) ? Number(valor) : 0;
+    return numero.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
   }
 
   private alerta(texto: string, tipo: 'success' | 'danger'): void {

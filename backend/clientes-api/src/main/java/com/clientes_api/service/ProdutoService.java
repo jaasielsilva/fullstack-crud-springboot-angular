@@ -2,6 +2,7 @@ package com.clientes_api.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import com.clientes_api.dto.ProdutoRequestDTO;
@@ -30,6 +31,7 @@ public class ProdutoService {
         return ProdutoResponseDTO.from(encontrar(id));
     }
 
+    @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public ProdutoResponseDTO salvar(ProdutoRequestDTO dto) {
         Produto produto = new Produto();
         produto.setNome(dto.getNome());
@@ -41,6 +43,7 @@ public class ProdutoService {
         return ProdutoResponseDTO.from(produtoRepository.save(produto));
     }
 
+    @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public ProdutoResponseDTO atualizar(Long id, ProdutoRequestDTO dto) {
         Produto produto = encontrar(id);
 
@@ -53,6 +56,7 @@ public class ProdutoService {
         return ProdutoResponseDTO.from(produtoRepository.save(produto));
     }
 
+    @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public void deletar(Long id) {
         produtoRepository.delete(encontrar(id));
     }

@@ -1,0 +1,188 @@
+<div class="container-fluid dashboard-container">
+
+    <div class="d-flex align-items-end justify-content-between mb-3 border-bottom pb-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-cart-check fs-4 text-primary"></i>
+            <h4 class="fw-bold text-dark mb-0">Gestão de Pedidos</h4>
+        </div>
+
+        <button class="btn btn-sm btn-primary rounded-pill fw-bold px-3 shadow-sm" (click)="abrirNovo()">
+            <i class="bi bi-plus-lg me-1"></i> Inserir
+        </button>
+    </div>
+
+    <div class="custom-toast-container">
+        <div class="custom-toast" [class.show]="mensagem" [class.success]="tipoMensagem === 'success'"
+            [class.danger]="tipoMensagem === 'danger'">
+
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi fs-4" [class.bi-check-circle-fill]="tipoMensagem === 'success'"
+                    [class.bi-exclamation-triangle-fill]="tipoMensagem === 'danger'"
+                    [class.text-success]="tipoMensagem === 'success'"
+                    [class.text-danger]="tipoMensagem === 'danger'"></i>
+
+                <div>
+                    <h6 class="mb-0 fw-bold">{{ tipoMensagem === 'success' ? 'Sucesso!' : 'Atenção' }}</h6>
+                    <small class="text-muted">{{ mensagem }}</small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+
+            <div class="card premium-card border-0 shadow-sm h-100">
+
+                <div class="card-header bg-transparent border-0 p-4 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-dark">Pedidos Registrados</h5>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">
+                        {{ pedidos.length }} registros
+                    </span>
+                </div>
+
+                <div class="card-body p-0">
+
+                    <div *ngIf="carregando" class="p-4">
+                        <div *ngFor="let i of [1,2,3,4]" class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                            <div class="skeleton skeleton-avatar me-3"></div>
+                            <div class="w-100">
+                                <div class="skeleton skeleton-title"></div>
+                                <div class="skeleton skeleton-text w-25"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="!carregando && pedidos.length === 0" class="text-center py-5">
+                        <div class="text-muted mb-3">
+                            <i class="bi bi-inbox fs-1"></i>
+                        </div>
+                        <h6 class="text-muted fw-normal">Nenhum pedido cadastrado ainda.</h6>
+                        <button class="btn btn-outline-primary mt-3 rounded-pill" (click)="abrirNovo()">
+                            Criar o primeiro
+                        </button>
+                    </div>
+
+                    <div class="table-responsive" *ngIf="!carregando && pedidos.length > 0">
+                        <table class="table table-hover align-middle mb-0 custom-table">
+
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Status</th>
+                                    <th>Valor Total</th>
+                                    <th>Data</th>
+                                    <th class="text-end pe-4">Ações</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <tr *ngFor="let pedido of pedidos">
+
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar bg-light text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center"
+                                                style="width: 40px; height: 40px;">
+                                                <i class="bi bi-receipt"></i>
+                                            </div>
+
+                                            <div>
+                                                <h6 class="mb-0 fw-bold">#{{ pedido.id }}</h6>
+                                                <small class="text-muted">Venda registrada</small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>{{ pedido.cliente }}</td>
+
+                                    <td>
+                                        <span class="badge rounded-pill px-3 bg-success-subtle text-success">
+                                            <i class="bi bi-check-circle-fill me-1"></i>
+                                            {{ pedido.status }}
+                                        </span>
+                                    </td>
+
+                                    <td class="fw-bold">
+                                        {{ pedido.valorTotal | currency:'BRL' }}
+                                    </td>
+
+                                    <td>
+                                        {{ pedido.dataPedido | date:'dd/MM/yyyy HH:mm' }}
+                                    </td>
+
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group shadow-sm rounded-pill">
+                                            <button class="btn btn-sm btn-light text-primary border-0"
+                                                (click)="editar(pedido)" title="Editar">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+
+                                            <button class="btn btn-sm btn-light text-danger border-0"
+                                                (click)="deletar(pedido.id!)" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+
+                                </tr>
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- OFFCANVAS BACKGROUND -->
+<div class="custom-offcanvas-backdrop" [class.show]="mostrarForm" (click)="fecharForm()"></div>
+
+<!-- OFFCANVAS FORM -->
+<div class="custom-offcanvas" [class.show]="mostrarForm">
+    <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+        <div class="d-flex align-items-center gap-2">
+            <div class="icon-circle-sm bg-primary-subtle text-primary">
+                <i class="bi" [class.bi-cart-plus]="!editandoId" [class.bi-pencil-square]="editandoId"></i>
+            </div>
+            <h5 class="mb-0 fw-bold text-dark">{{ editandoId ? 'Editar Pedido' : 'Novo Pedido' }}</h5>
+        </div>
+        <button type="button" class="btn-close shadow-none" (click)="fecharForm()"></button>
+    </div>
+
+    <div class="offcanvas-body flex-grow-1">
+        <div class="row g-4">
+            <div class="col-12">
+                <label class="form-label fw-semibold text-secondary small mb-1">Cliente ID <span class="text-danger">*</span></label>
+                <input type="number" class="form-control bg-light border-0" [(ngModel)]="clienteId" min="1" placeholder="Ex: 1">
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-semibold text-secondary small mb-1">Produto ID <span class="text-danger">*</span></label>
+                <input type="number" class="form-control bg-light border-0" [(ngModel)]="produtoId" min="1" placeholder="Ex: 1">
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-semibold text-secondary small mb-1">Quantidade <span class="text-danger">*</span></label>
+                <input type="number" class="form-control bg-light border-0" [(ngModel)]="quantidade" min="1" placeholder="Ex: 1">
+            </div>
+        </div>
+    </div>
+
+    <div class="p-4 border-top bg-white">
+        <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm py-2 mb-2" [disabled]="salvando" (click)="salvarNovo()">
+            <span *ngIf="!salvando">
+                <i class="bi me-2" [class.bi-check2]="editandoId" [class.bi-plus-lg]="!editandoId"></i>
+                {{ editandoId ? 'Salvar Alterações' : 'Cadastrar Pedido' }}
+            </span>
+            <span *ngIf="salvando">Salvando...</span>
+        </button>
+        <button type="button" class="btn btn-light text-muted w-100 rounded-pill fw-bold py-2" (click)="fecharForm()">
+            Cancelar
+        </button>
+    </div>
+</div>

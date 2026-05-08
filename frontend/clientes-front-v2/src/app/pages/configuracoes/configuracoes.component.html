@@ -38,6 +38,9 @@
                     <button class="nav-link text-start mb-2" [class.active]="abaAtiva === 'notificacoes'" (click)="abaAtiva = 'notificacoes'">
                         <i class="bi bi-bell me-2"></i> Notificações
                     </button>
+                    <button class="nav-link text-start mb-2" [class.active]="abaAtiva === 'dashboard'" (click)="abaAtiva = 'dashboard'">
+                        <i class="bi bi-graph-up-arrow me-2"></i> Dashboard Executivo
+                    </button>
                 </nav>
             </div>
         </div>
@@ -152,6 +155,51 @@
                                 <i class="bi bi-save2 me-2"></i> Atualizar Preferências
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ABA: DASHBOARD EXECUTIVO -->
+                <div *ngIf="abaAtiva === 'dashboard'" class="animate__animated animate__fadeIn">
+                    <div class="card-header bg-light border-bottom p-4">
+                        <h5 class="mb-1 fw-bold text-dark">Meta Executiva por Perfil</h5>
+                        <p class="text-muted small mb-0">Configure meta por usuário, perfil (role) ou global do tenant.</p>
+                    </div>
+                    <div class="card-body p-4 p-lg-5">
+                        <div *ngIf="!isAdmin" class="alert alert-warning">
+                            Apenas administradores podem alterar a meta executiva.
+                        </div>
+                        <form (ngSubmit)="salvarMetaDashboard()" *ngIf="isAdmin">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-secondary">Escopo</label>
+                                    <select class="form-select bg-light border-0 py-2"
+                                        [(ngModel)]="dashboardMetaConfig.escopo" name="escopo">
+                                        <option value="USER">Usuário atual</option>
+                                        <option value="ROLE">Perfil (Role)</option>
+                                        <option value="GLOBAL">Global (Tenant)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4" *ngIf="dashboardMetaConfig.escopo === 'ROLE'">
+                                    <label class="form-label small fw-bold text-secondary">Perfil</label>
+                                    <select class="form-select bg-light border-0 py-2"
+                                        [(ngModel)]="dashboardMetaConfig.alvo" name="alvoRole">
+                                        <option *ngFor="let role of rolesDisponiveis" [value]="role">{{ role }}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-secondary">Meta de Receita (R$)</label>
+                                    <input type="number" min="1" class="form-control bg-light border-0 py-2"
+                                        [(ngModel)]="dashboardMetaConfig.metaReceita" name="metaReceita">
+                                </div>
+                            </div>
+                            <div class="mt-4 border-top pt-4 text-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold py-2 shadow-sm" [disabled]="carregando">
+                                    <i class="bi bi-save2 me-2" *ngIf="!carregando"></i>
+                                    <span *ngIf="carregando" class="spinner-border spinner-border-sm me-2"></span>
+                                    {{ carregando ? 'Salvando...' : 'Salvar Meta' }}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 

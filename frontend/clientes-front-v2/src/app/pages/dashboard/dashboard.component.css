@@ -1,17 +1,14 @@
-/* CSS Exclusivo para o Dashboard */
-
 .premium-card {
-  border-radius: 20px; /* Bordas bem arredondadas, muito moderno */
-  transition: all 0.3s ease; /* Faz com que qualquer animação dure 0.3s e seja suave */
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  background: #fff;
 }
 
-/* Efeito ao passar o mouse por cima do card */
 .premium-card:hover {
-  transform: translateY(-8px); /* Sobe o card um pouquinho */
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; /* Aumenta a sombra */
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1) !important;
 }
 
-/* Bolinha bonitinha para colocar ícones dentro */
 .icon-circle {
   width: 36px;
   height: 36px;
@@ -21,6 +18,229 @@
   justify-content: center;
   font-size: 1.1rem;
 }
+
 .dashboard-container {
-  padding: 0px 0px;
+  padding: 0;
+}
+
+/* Valores dos KPIs — menor que fs-2 para caber bem valores longos (ex.: R$ 2.310.000,00) */
+.metric-value {
+  font-size: clamp(0.95rem, 2.1vw, 1.2rem);
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
+.period-btn {
+  border: 1px solid #dbe3f0;
+  background: #fff;
+  color: #334155;
+  font-weight: 600;
+  padding: 0.25rem 0.7rem;
+}
+
+.period-btn.active {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+}
+
+.period-label {
+  font-size: 0.82rem;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f1f3f5;
+  color: #495057;
+}
+
+.metric-row:last-child {
+  border-bottom: 0;
+}
+
+.rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.rank-row:last-child {
+  border-bottom: 0;
+}
+
+.rank-pill {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.empty-state {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.alert-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+
+.trend-up {
+  color: #15803d;
+}
+
+.trend-down {
+  color: #b91c1c;
+}
+
+.trend-neutral {
+  color: #6b7280;
+}
+
+.sparkline-wrap {
+  width: 100%;
+  height: 34px;
+  opacity: 0.95;
+}
+
+.sparkline {
+  width: 100%;
+  height: 34px;
+}
+
+.sparkline-line {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.spark-dot {
+  opacity: 0.25;
+  transition: opacity 0.2s ease, r 0.2s ease;
+}
+
+.spark-dot:hover {
+  opacity: 1;
+  r: 2.8;
+}
+
+.sparkline-receita {
+  stroke: #16a34a;
+}
+
+.sparkline-pedidos {
+  stroke: #2563eb;
+}
+
+.spark-dot-receita {
+  fill: #16a34a;
+}
+
+.spark-dot-pedidos {
+  fill: #2563eb;
+}
+
+.executive-progress {
+  height: 8px;
+  border-radius: 999px;
+  background-color: #e9eef8;
+}
+
+.executive-progress .progress-bar {
+  background: linear-gradient(90deg, #2563eb, #16a34a);
+  border-radius: 999px;
+}
+
+.semaforo-verde {
+  background: #e8f7ee;
+  color: #166534;
+  border-color: #86efac !important;
+}
+
+.semaforo-amarelo {
+  background: #fff8e6;
+  color: #92400e;
+  border-color: #fcd34d !important;
+}
+
+.semaforo-vermelho {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fca5a5 !important;
+}
+
+.custom-table th {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+.custom-table td {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+}
+
+@media (max-width: 991px) {
+  .premium-card {
+    border-radius: 14px;
+  }
+
+  .icon-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+
+  .fs-2 {
+    font-size: 1.4rem !important;
+  }
+
+  .metric-row,
+  .rank-row {
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  .custom-table th,
+  .custom-table td {
+    white-space: nowrap;
+    font-size: 0.82rem;
+  }
+
+  .period-label {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+
+  .sparkline-wrap,
+  .sparkline {
+    height: 28px;
+  }
 }

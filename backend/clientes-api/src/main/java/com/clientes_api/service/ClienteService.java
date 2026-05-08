@@ -2,6 +2,7 @@ package com.clientes_api.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import com.clientes_api.dto.ClienteRequestDTO;
@@ -29,6 +30,7 @@ public class ClienteService {
         return ClienteResponseDTO.from(encontrar(id));
     }
 
+    @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public ClienteResponseDTO salvar(ClienteRequestDTO dto) {
         clienteRepository.findFirstByEmail(dto.getEmail()).ifPresent(c -> {
             throw new RuntimeException("Já existe um cliente cadastrado com esse email");
@@ -43,6 +45,7 @@ public class ClienteService {
         return ClienteResponseDTO.from(clienteRepository.save(cliente));
     }
 
+    @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public ClienteResponseDTO atualizar(Long id, ClienteRequestDTO dto) {
         Cliente cliente = encontrar(id);
 
@@ -60,6 +63,7 @@ public class ClienteService {
         return ClienteResponseDTO.from(clienteRepository.save(cliente));
     }
 
+    @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public void deletar(Long id) {
         clienteRepository.delete(encontrar(id));
     }
