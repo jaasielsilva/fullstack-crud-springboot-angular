@@ -23,15 +23,19 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       const isLoginRequest = req.url.includes('/auth/login');
 
+      // 401 = não autenticado / token inválido: encerra sessão
       if (error.status === 401 && !isLoginRequest) {
-        // 401 = nao autenticado / token invalido / expirado: forca logout
-        console.warn('[Auth] Token expirado ou invalido. Encerrando sessao...');
+        console.warn('[Auth] Token expirado ou inválido. Encerrando sessão...');
         authService.logout();
       } else if (error.status === 403 && !isLoginRequest) {
-        // 403 = autenticado mas sem permissao no recurso: nao desloga, apenas avisa
-        console.warn('[Auth] Sem permissao para acessar', req.url);
-        if (router.url !== '/sem-permissao') {
-          router.navigate(['/sem-permissao']);
+        const codigo = (error.error && (error.error as { codigo?: string }).codigo) || '';
+        if (codigo === 'EMPRESA_BLOQUEADA') {
+          router.navigate(['/planos']);
+        } else {
+          console.warn('[Auth] Sem permissão para acessar', req.url);
+          if (router.url !== '/sem-permissao') {
+            router.navigate(['/sem-permissao']);
+          }
         }
       }
 

@@ -5,6 +5,7 @@ import com.clientes_api.service.EmailService;
 import com.clientes_api.security.TokenService;
 import com.clientes_api.model.Usuario;
 import com.clientes_api.repository.UsuarioRepository;
+import com.clientes_api.service.SubscriptionSnapshotService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,19 +46,32 @@ public class AuthenticationController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private SubscriptionSnapshotService subscriptionSnapshotService;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid AuthenticationDTO data) {
         // ... (login implementation remains same)
         try {
             var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.senha());
             var auth = this.authenticationManager.authenticate(usernamePassword);
-            var token = tokenService.gerarToken((Usuario) auth.getPrincipal());
-            return ResponseEntity.ok(new LoginResponseDTO(token));
+            Usuario principal = (Usuario) auth.getPrincipal();
+            var token = tokenService.gerarToken(principal);
+            var snapshot = subscriptionSnapshotService.montar(principal.getTenantId());
+            return ResponseEntity.ok(new LoginResponseDTO(token, snapshot));
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", "Email ou senha incorretos."));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("erro", "Erro ao realizar login."));
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> perfilAssinatura(@AuthenticationPrincipal Usuario usuario) {
+        if (usuario == null || usuario.getTenantId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(subscriptionSnapshotService.montar(usuario.getTenantId()));
     }
 
     @PostMapping("/forgot-password")

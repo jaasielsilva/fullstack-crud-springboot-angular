@@ -1,0 +1,35 @@
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <h1 class="h3 fw-bold">Escolha seu plano</h1>
+    <p class="text-muted mb-0">Cobrança segura via Mercado Pago. O acesso é liberado após confirmação do pagamento (webhook).</p>
+  </div>
+
+  <div *ngIf="checkoutErro" class="alert alert-danger max-width-alert mx-auto">{{ checkoutErro }}</div>
+
+  <div *ngIf="carregandoLista" class="text-center py-5 text-muted">Carregando planos...</div>
+
+  <div *ngIf="!carregandoLista" class="row g-4 justify-content-center">
+    <div class="col-md-5" *ngFor="let p of planos">
+      <div class="card h-100 shadow-sm border-0 plan-card">
+        <div class="card-body d-flex flex-column p-4">
+          <h2 class="h5 fw-bold">{{ p.nome }}</h2>
+          <p class="text-muted small flex-grow-1">{{ p.descricao }}</p>
+          <div class="display-6 fw-bold text-primary mb-4">{{ formatMoney(p.valor) }}<span class="fs-6 text-muted fw-normal">/mês</span></div>
+          <button
+            type="button"
+            class="btn btn-lg btn-primary w-100"
+            [disabled]="contratandoId !== null"
+            (click)="assinar(p.id)"
+          >
+            <span *ngIf="contratandoId !== p.id">{{ labelBotao(p) }}</span>
+            <span *ngIf="contratandoId === p.id">Redirecionando...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-center mt-5 mb-0">
+    <a routerLink="/dashboard" class="text-decoration-none small">← Voltar ao sistema</a>
+  </p>
+</div>

@@ -3,6 +3,7 @@ package com.clientes_api.service;
 import com.clientes_api.dto.TenantRegistrationDTO;
 import com.clientes_api.model.Tenant;
 import com.clientes_api.model.UsuarioRole;
+import com.clientes_api.model.enums.StatusEmpresa;
 import com.clientes_api.repository.TenantRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -40,7 +41,10 @@ public class TenantService {
             // 1. Cria a Empresa
             Tenant novoTenant = new Tenant();
             novoTenant.setNome(data.nomeEmpresa());
-            novoTenant.setCnpj(data.cnpj());
+            novoTenant.setDocumento(data.cnpj());
+            novoTenant.setStatus(StatusEmpresa.ATIVA);
+            novoTenant.setTrialInicio(null);
+            novoTenant.setTrialFim(null);
             novoTenant.setAtivo(true);
             tenantRepository.save(novoTenant);
             logger.info("Tenant criado com ID: {}", novoTenant.getId());

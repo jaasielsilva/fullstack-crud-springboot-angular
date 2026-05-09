@@ -1,8 +1,8 @@
-<ng-container *ngIf="isLoginPage">
+<ng-container *ngIf="minimalShell">
   <router-outlet></router-outlet>
 </ng-container>
 
-<ng-container *ngIf="!isLoginPage">
+<ng-container *ngIf="!minimalShell">
   <div class="app-wrapper">
 
     <!-- Sidebar Lateral -->
@@ -124,6 +124,8 @@
           </div>
         </div>
       </header>
+
+      <app-trial-banner></app-trial-banner>
 
       <!-- Onde as outras telas vão renderizar -->
       <main class="main-content">

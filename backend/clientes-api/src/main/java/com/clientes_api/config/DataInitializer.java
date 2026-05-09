@@ -1,8 +1,12 @@
 package com.clientes_api.config;
 
+import com.clientes_api.model.Plano;
 import com.clientes_api.model.Tenant;
 import com.clientes_api.model.Usuario;
 import com.clientes_api.model.UsuarioRole;
+import com.clientes_api.model.enums.StatusEmpresa;
+import com.clientes_api.model.enums.TipoPlano;
+import com.clientes_api.repository.PlanoRepository;
 import com.clientes_api.repository.TenantRepository;
 import com.clientes_api.repository.UsuarioRepository;
 import org.slf4j.Logger;
@@ -12,6 +16,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
 
 @Component
 @ConditionalOnProperty(name = "app.data-initializer.enabled", havingValue = "true", matchIfMissing = true)
@@ -25,15 +31,45 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private TenantRepository tenantRepository;
 
+    @Autowired
+    private PlanoRepository planoRepository;
+
     @Override
     public void run(String... args) throws Exception {
         try {
             logger.info("Iniciando processo de inicialização de dados...");
 
+            if (planoRepository.count() == 0) {
+                Plano basico = new Plano();
+                basico.setNome("Plano Básico");
+                basico.setDescricao("Clientes, Produtos, Usuários, Pedidos/Vendas e Dashboard básico.");
+                basico.setValor(new BigDecimal("59.90"));
+                basico.setTipo(TipoPlano.BASICO);
+                basico.setAtivo(true);
+                basico.setRecursosLiberados("[\"CLIENTES\",\"PRODUTOS\",\"USUARIOS\",\"PEDIDOS\",\"DASHBOARD_BASICO\"]");
+
+                Plano premium = new Plano();
+                premium.setNome("Plano Premium");
+                premium.setDescricao("Dashboard completo, Financeiro, Pedidos/Vendas, Relatórios e Suporte prioritário.");
+                premium.setValor(new BigDecimal("99.90"));
+                premium.setTipo(TipoPlano.PREMIUM);
+                premium.setAtivo(true);
+                premium.setRecursosLiberados("[\"CLIENTES\",\"PRODUTOS\",\"USUARIOS\",\"DASHBOARD_COMPLETO\",\"FINANCEIRO\",\"PEDIDOS\",\"RELATORIOS\",\"SUPORTE_PRIORITARIO\"]");
+
+                planoRepository.save(basico);
+                planoRepository.save(premium);
+                logger.info("✅ Planos Básico e Premium criados no catálogo.");
+            }
+
             // Se não houver tenants, criamos um padrão
             Tenant defaultTenant;
             if (tenantRepository.count() == 0) {
-                defaultTenant = tenantRepository.save(new Tenant("LexCRM Matriz"));
+                Tenant matriz = new Tenant("LexCRM Matriz");
+                matriz.setStatus(StatusEmpresa.ATIVA);
+                matriz.setEmail("admin@lexcrm.com.br");
+                matriz.setTrialInicio(null);
+                matriz.setTrialFim(null);
+                defaultTenant = tenantRepository.save(matriz);
                 logger.info("✅ Tenant padrão criado: {}", defaultTenant.getNome());
             } else {
                 defaultTenant = tenantRepository.findAll().get(0);
