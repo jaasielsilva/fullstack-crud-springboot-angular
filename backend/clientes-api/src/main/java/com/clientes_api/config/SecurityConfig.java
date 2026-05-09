@@ -1,6 +1,7 @@
 package com.clientes_api.config;
 
 import com.clientes_api.security.SecurityFilter;
+import com.clientes_api.security.TenantAccessFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +30,9 @@ public class SecurityConfig {
     @Autowired
     private SecurityFilter securityFilter;
 
+    @Autowired
+    private TenantAccessFilter tenantAccessFilter;
+
     @Value("${app.cors.allowed-origins:http://localhost:4200}")
     private String allowedOriginsCsv;
 
@@ -43,11 +47,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/planos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/public/cadastro-trial").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/mercadopago").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(tenantAccessFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

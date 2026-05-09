@@ -1,0 +1,54 @@
+{
+  "basic_example": {
+    "items": [
+      {
+        "title": "Plano Básico - ERP Corporativo",
+        "description": "Assinatura mensal do Plano Básico para Adegas e Distribuidoras",
+        "quantity": 1,
+        "currency_id": "BRL",
+        "unit_price": 59.9
+      }
+    ],
+    "payer": {
+      "name": "Nome do Cliente",
+      "email": "cliente@email.com"
+    },
+    "external_reference": "EMPRESA_1_PLANO_1_ASSINATURA_9",
+    "notification_url": "https://api.erpcorporativo.shop/api/webhooks/mercadopago",
+    "back_urls": {
+      "success": "https://erpcorporativo.shop/pagamento/sucesso",
+      "failure": "https://erpcorporativo.shop/pagamento/falha",
+      "pending": "https://erpcorporativo.shop/pagamento/pendente"
+    },
+    "auto_return": "approved"
+  },
+  "premium_example": {
+    "items": [
+      {
+        "title": "Plano Premium - ERP Corporativo",
+        "description": "Assinatura mensal do Plano Premium para Adegas e Distribuidoras",
+        "quantity": 1,
+        "currency_id": "BRL",
+        "unit_price": 99.9
+      }
+    ],
+    "payer": {
+      "name": "Nome do Cliente",
+      "email": "cliente@email.com"
+    },
+    "external_reference": "EMPRESA_1_PLANO_2_ASSINATURA_10",
+    "notification_url": "https://api.erpcorporativo.shop/api/webhooks/mercadopago",
+    "back_urls": {
+      "success": "https://erpcorporativo.shop/pagamento/sucesso",
+      "failure": "https://erpcorporativo.shop/pagamento/falha",
+      "pending": "https://erpcorporativo.shop/pagamento/pendente"
+    },
+    "auto_return": "approved"
+  },
+  "webhook_payment_example": {
+    "type": "payment",
+    "data": {
+      "id": "123456789"
+    }
+  }
+}

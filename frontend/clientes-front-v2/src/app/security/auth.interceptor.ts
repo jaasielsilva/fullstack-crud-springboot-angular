@@ -22,9 +22,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(requestToForward).pipe(
     catchError((error: HttpErrorResponse) => {
       // Se o Backend devolver Erro de Segurança (401 Não Autorizado ou 403 Proibido)
-      if (error.status === 401 || error.status === 403) {
-        // Importante: Só desloga se a requisição NÃO for para a própria rota de Login, 
-        // senão quem erra a senha no login seria redirecionado num loop infinito!
+      // Apenas 401 indica token inválido/expirado. 403 pode ser bloqueio comercial (empresa BLOQUEADA).
+      if (error.status === 401) {
         if (!req.url.includes('/auth/login')) {
           console.warn('⚠️ Token expirado ou adulterado! Forçando logout por segurança...');
           authService.logout();
