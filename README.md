@@ -105,7 +105,55 @@ A aplicação está dockerizada e preparada para CI/CD em VPS única com dois am
 | Produção | `https://erpcorporativo.shop` | `https://api.erpcorporativo.shop` | `main` |
 | Homologação | `https://dev.erpcorporativo.shop` | `https://api.dev.erpcorporativo.shop` | `dev` |
 
-Reverse proxy com **Nginx no host** + Let's Encrypt (Certbot), MySQL isolado por ambiente, GitHub Actions publicando imagens no GHCR e deploy via SSH, com notificações no Telegram. Passo a passo em [`deploy/README.md`](deploy/README.md). **Visão operacional** (repositório, pastas na VPS, domínios, secrets, primeiro login): [`docs/18-vps-operacao-completa.md`](docs/18-vps-operacao-completa.md).
+Reverse proxy com **Nginx no host** + Let's Encrypt (Certbot), MySQL isolado por ambiente, GitHub Actions publicando imagens no GHCR e deploy via SSH, com notificações no Telegram.
+
+### 📁 Localização na VPS
+
+```
+/opt/erpcorporativo/
+├── hml/          ← docker-compose + .env do ambiente de homologação (dev)
+├── prod/         ← docker-compose + .env do ambiente de produção
+└── repo/         ← clone do repositório Git
+```
+
+### 🔧 Comandos de operação na VPS (via SSH)
+
+**Subir / atualizar HML (dev):**
+```bash
+cd /opt/erpcorporativo/hml
+docker compose down -v --remove-orphans
+docker compose pull
+docker compose up -d
+docker logs -f api-hml
+```
+
+**Subir / atualizar Produção:**
+```bash
+cd /opt/erpcorporativo/prod
+docker compose down --remove-orphans
+docker compose pull
+docker compose up -d
+docker logs -f api-prod
+```
+
+> ⚠️ Use `-v` apenas em HML para zerar o banco. Em produção **nunca** use `-v`.
+
+**Ver logs:**
+```bash
+docker logs -f api-hml     # API homologação
+docker logs -f api-prod    # API produção
+docker logs -f web-hml     # Frontend homologação
+```
+
+**Credenciais padrão do Super Admin (banco zerado):**
+| Campo | Valor |
+|-------|-------|
+| Email | `admin@lexcrm.com.br` |
+| Senha | `admin@LexCRM2025` |
+
+> Sobrescreva via `APP_ADMIN_EMAIL` e `APP_ADMIN_SENHA` no `.env`.
+
+Passo a passo completo em [`deploy/README.md`](deploy/README.md).
 
 ## 🔌 API Endpoints
 
