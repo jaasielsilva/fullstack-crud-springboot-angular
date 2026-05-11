@@ -53,10 +53,10 @@ public class Tenant {
     @Column(name = "mercado_pago_customer_id")
     private String mercadoPagoCustomerId;
 
-    @Column(name = "criado_em", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
-    @Column(name = "atualizado_em")
+    @Column(name = "updated_at")
     private LocalDateTime atualizadoEm;
 
     public Tenant(String nome) {
