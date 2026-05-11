@@ -101,8 +101,8 @@ public class DataInitializer implements CommandLineRunner {
 
                 Usuario admin = new Usuario(adminEmail, encryptedPassword, UsuarioRole.ADMIN);
                 admin.setUsername("admin.lex");
-                admin.setTenantId(defaultTenant.getId()); // Vincula ao tenant
-                admin.setRedefinirSenha(false); // Admin matriz não precisa resetar
+                // tenant_id é gerenciado pelo @TenantId do Hibernate via TenantContext (já setado acima)
+                admin.setRedefinirSenha(false);
 
                 repository.save(admin);
 

@@ -3,9 +3,7 @@ package com.clientes_api.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.PrePersist;
 import lombok.Data;
-import com.clientes_api.config.TenantContext;
 import org.hibernate.annotations.TenantId;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -36,14 +34,13 @@ public abstract class AuditModel {
     @Column(name = "updated_by")
     private String updatedBy;
 
+    /**
+     * Gerenciado pelo Hibernate via @TenantId + TenantIdentifierResolver.
+     * O valor é preenchido automaticamente a partir do TenantContext no momento do save().
+     * NÃO use @PrePersist para setar este campo — conflita com a validação interna do Hibernate
+     * e causa "assigned tenant id differs from current tenant id".
+     */
     @TenantId
     @Column(name = "tenant_id", nullable = false)
     private Long tenantId;
-
-    @PrePersist
-    public void setTenantIdOnCreate() {
-        if (this.tenantId == null) {
-            this.tenantId = TenantContext.getCurrentTenant();
-        }
-    }
 }
