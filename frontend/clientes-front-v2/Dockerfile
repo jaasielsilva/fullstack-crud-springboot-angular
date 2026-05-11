@@ -22,6 +22,9 @@ RUN npx ng build --configuration=${BUILD_CONFIG}
 # ============================================================
 FROM nginx:1.27-alpine
 
+# curl para HEALTHCHECK (wget não vem garantido na imagem slim)
+RUN apk add --no-cache curl
+
 # Remove configuração default e copia a nossa
 RUN rm -f /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/app.conf
@@ -32,5 +35,5 @@ COPY --from=build /app/dist/clientes-front-v2/browser /usr/share/nginx/html
 
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -fsS http://127.0.0.1/ -o /dev/null || exit 1
