@@ -1,5 +1,6 @@
 package com.clientes_api.service;
 
+import com.clientes_api.config.TenantContext;
 import com.clientes_api.dto.SubscriptionSnapshotDTO;
 import com.clientes_api.model.Assinatura;
 import com.clientes_api.model.Plano;
@@ -39,34 +40,44 @@ public class SubscriptionSnapshotService {
      * Monta o contexto exibido no login /auth/me para trial, bloqueio e pendências de pagamento.
      */
     public SubscriptionSnapshotDTO montar(Long empresaId) {
-        Tenant empresa = empresaService.buscarPorIdOuErro(empresaId);
-        Optional<Assinatura> opAss = assinaturaService.buscarUltimaPorTenant(empresaId);
+        Long previous = TenantContext.getCurrentTenant();
+        TenantContext.setCurrentTenant(empresaId);
+        try {
+            Tenant empresa = empresaService.buscarPorIdOuErro(empresaId);
+            Optional<Assinatura> opAss = assinaturaService.buscarUltimaPorTenant(empresaId);
 
-        StatusAssinatura assinaturaStatus = opAss.map(Assinatura::getStatus).orElse(StatusAssinatura.TRIAL);
+            StatusAssinatura assinaturaStatus = opAss.map(Assinatura::getStatus).orElse(StatusAssinatura.TRIAL);
 
-        Long diasTrial = null;
-        if (empresa.getStatus() == StatusEmpresa.TRIAL && empresa.getTrialFim() != null) {
-            long d = ChronoUnit.DAYS.between(LocalDate.now(), empresa.getTrialFim().toLocalDate());
-            diasTrial = Math.max(0, d);
+            Long diasTrial = null;
+            if (empresa.getStatus() == StatusEmpresa.TRIAL && empresa.getTrialFim() != null) {
+                long d = ChronoUnit.DAYS.between(LocalDate.now(), empresa.getTrialFim().toLocalDate());
+                diasTrial = Math.max(0, d);
+            }
+
+            boolean pagamentoPendente = assinaturaStatus == StatusAssinatura.PENDENTE;
+            String mensagemPendente = pagamentoPendente
+                    ? "Seu pagamento está em análise no Mercado Pago. Aguarde a confirmação por webhook."
+                    : null;
+
+            List<String> recursos = resolverRecursos(empresa, opAss.orElse(null));
+
+            return new SubscriptionSnapshotDTO(
+                    empresa.getStatus().name(),
+                    assinaturaStatus.name(),
+                    empresa.getTrialInicio(),
+                    empresa.getTrialFim(),
+                    diasTrial,
+                    pagamentoPendente,
+                    mensagemPendente,
+                    recursos
+            );
+        } finally {
+            if (previous != null) {
+                TenantContext.setCurrentTenant(previous);
+            } else {
+                TenantContext.clear();
+            }
         }
-
-        boolean pagamentoPendente = assinaturaStatus == StatusAssinatura.PENDENTE;
-        String mensagemPendente = pagamentoPendente
-                ? "Seu pagamento está em análise no Mercado Pago. Aguarde a confirmação por webhook."
-                : null;
-
-        List<String> recursos = resolverRecursos(empresa, opAss.orElse(null));
-
-        return new SubscriptionSnapshotDTO(
-                empresa.getStatus().name(),
-                assinaturaStatus.name(),
-                empresa.getTrialInicio(),
-                empresa.getTrialFim(),
-                diasTrial,
-                pagamentoPendente,
-                mensagemPendente,
-                recursos
-        );
     }
 
     private List<String> resolverRecursos(Tenant empresa, Assinatura assinatura) {

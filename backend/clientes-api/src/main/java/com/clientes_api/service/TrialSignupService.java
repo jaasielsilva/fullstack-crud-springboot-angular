@@ -1,17 +1,12 @@
 package com.clientes_api.service;
 
-import com.clientes_api.config.TenantContext;
 import com.clientes_api.dto.PublicTrialRegistrationDTO;
 import com.clientes_api.exception.BusinessException;
-import com.clientes_api.model.Assinatura;
 import com.clientes_api.model.Tenant;
 import com.clientes_api.model.Usuario;
-import com.clientes_api.model.enums.StatusAssinatura;
 import com.clientes_api.model.enums.StatusEmpresa;
-import com.clientes_api.model.UsuarioRole;
 import com.clientes_api.repository.TenantRepository;
 import com.clientes_api.repository.UsuarioRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,22 +22,19 @@ public class TrialSignupService {
 
     private final TenantRepository tenantRepository;
     private final UsuarioRepository usuarioRepository;
-    private final AssinaturaService assinaturaService;
-    private final PasswordEncoder passwordEncoder;
+    private final TrialTenantUserBootstrapService trialTenantUserBootstrapService;
 
     public TrialSignupService(TenantRepository tenantRepository,
                               UsuarioRepository usuarioRepository,
-                              AssinaturaService assinaturaService,
-                              PasswordEncoder passwordEncoder) {
+                              TrialTenantUserBootstrapService trialTenantUserBootstrapService) {
         this.tenantRepository = tenantRepository;
         this.usuarioRepository = usuarioRepository;
-        this.assinaturaService = assinaturaService;
-        this.passwordEncoder = passwordEncoder;
+        this.trialTenantUserBootstrapService = trialTenantUserBootstrapService;
     }
 
     @Transactional
     public Usuario cadastrarTrial(PublicTrialRegistrationDTO dados) {
-        if (usuarioRepository.findByLogin(dados.email()) != null) {
+        if (usuarioRepository.countByLoginGlobal(dados.email().trim()) > 0) {
             throw new BusinessException("Já existe usuário com este e-mail.");
         }
         if (tenantRepository.existsByNomeIgnoreCase(dados.nomeEmpresa().trim())) {
@@ -64,23 +56,6 @@ public class TrialSignupService {
         empresa.setTrialFim(fim);
         empresa = tenantRepository.save(empresa);
 
-        TenantContext.setCurrentTenant(empresa.getId());
-
-        Usuario admin = new Usuario();
-        admin.setLogin(dados.email().trim().toLowerCase());
-        admin.setUsername(dados.nomeResponsavel().trim());
-        admin.setSenha(passwordEncoder.encode(dados.senha()));
-        admin.setRole(UsuarioRole.ADMIN);
-        admin.setTenantId(empresa.getId());
-        admin.setRedefinirSenha(false);
-        admin = usuarioRepository.save(admin);
-
-        Assinatura assinatura = new Assinatura();
-        assinatura.setTenantId(empresa.getId());
-        assinatura.setStatus(StatusAssinatura.TRIAL);
-        assinatura.setPlano(null);
-        assinaturaService.salvar(assinatura);
-
-        return admin;
+        return trialTenantUserBootstrapService.criarAdminEAssinaturaTrial(empresa.getId(), dados);
     }
 }
