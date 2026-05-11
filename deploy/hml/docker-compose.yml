@@ -49,6 +49,11 @@ services:
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      # Trial / Mercado Pago (ver deploy/hml/.env.example e docs/19-trial-assinatura-mercadopago.md)
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://dev.erpcorporativo.shop}
+      MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-}
+      MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://api.dev.erpcorporativo.shop/api/webhooks/mercadopago}
+      MERCADO_PAGO_PREFER_SANDBOX: ${MERCADO_PAGO_PREFER_SANDBOX:-true}
     networks:
       - internal-hml
     ports:
