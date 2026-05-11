@@ -64,27 +64,23 @@ public class TrialSignupService {
         empresa.setTrialFim(fim);
         empresa = tenantRepository.save(empresa);
 
-        try {
-            TenantContext.setCurrentTenant(empresa.getId());
+        TenantContext.setCurrentTenant(empresa.getId());
 
-            Usuario admin = new Usuario();
-            admin.setLogin(dados.email().trim().toLowerCase());
-            admin.setUsername(dados.nomeResponsavel().trim());
-            admin.setSenha(passwordEncoder.encode(dados.senha()));
-            admin.setRole(UsuarioRole.ADMIN);
-            admin.setTenantId(empresa.getId());
-            admin.setRedefinirSenha(false);
-            admin = usuarioRepository.save(admin);
+        Usuario admin = new Usuario();
+        admin.setLogin(dados.email().trim().toLowerCase());
+        admin.setUsername(dados.nomeResponsavel().trim());
+        admin.setSenha(passwordEncoder.encode(dados.senha()));
+        admin.setRole(UsuarioRole.ADMIN);
+        admin.setTenantId(empresa.getId());
+        admin.setRedefinirSenha(false);
+        admin = usuarioRepository.save(admin);
 
-            Assinatura assinatura = new Assinatura();
-            assinatura.setTenantId(empresa.getId());
-            assinatura.setStatus(StatusAssinatura.TRIAL);
-            assinatura.setPlano(null);
-            assinaturaService.salvar(assinatura);
+        Assinatura assinatura = new Assinatura();
+        assinatura.setTenantId(empresa.getId());
+        assinatura.setStatus(StatusAssinatura.TRIAL);
+        assinatura.setPlano(null);
+        assinaturaService.salvar(assinatura);
 
-            return admin;
-        } finally {
-            TenantContext.clear();
-        }
+        return admin;
     }
 }
