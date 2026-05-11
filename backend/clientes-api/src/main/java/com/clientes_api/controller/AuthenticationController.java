@@ -162,7 +162,8 @@ public class AuthenticationController {
             }
 
             String token = tokenService.gerarToken(usuarioAtualizado);
-            return ResponseEntity.ok(new LoginResponseDTO(token));
+            var snapshot = subscriptionSnapshotService.montar(usuarioAtualizado.getTenantId());
+            return ResponseEntity.ok(new LoginResponseDTO(token, snapshot));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("erro", "Erro ao renovar token."));
         }
