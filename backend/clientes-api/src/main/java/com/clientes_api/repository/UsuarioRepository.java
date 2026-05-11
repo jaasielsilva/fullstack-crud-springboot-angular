@@ -16,6 +16,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query(value = "SELECT * FROM usuarios u WHERE u.login = :login OR u.username = :login LIMIT 1", nativeQuery = true)
     Usuario findByLoginOrUsernameGlobal(@Param("login") String login);
 
+    // Busca apenas o tenant_id (sem materializar a entidade), útil quando o TenantContext ainda não está setado.
+    @Query(value = "SELECT u.tenant_id FROM usuarios u WHERE LOWER(u.login) = LOWER(:login) OR LOWER(u.username) = LOWER(:login) LIMIT 1", nativeQuery = true)
+    Long findTenantIdByLoginOrUsernameGlobal(@Param("login") String login);
+
     /** Verificação global de e-mail (cadastro trial / onboarding) sem filtro de tenant na sessão. */
     @Query(value = "SELECT COUNT(*) FROM usuarios u WHERE LOWER(u.login) = LOWER(:login)", nativeQuery = true)
     long countByLoginGlobal(@Param("login") String login);

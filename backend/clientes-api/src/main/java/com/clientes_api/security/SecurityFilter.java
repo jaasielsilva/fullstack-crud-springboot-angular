@@ -37,15 +37,20 @@ public class SecurityFilter extends OncePerRequestFilter {
             if (token != null) {
                 String login = tokenService.validarToken(token);
                 if (login != null && !login.isEmpty()) {
-                    Usuario usuario = usuarioRepository.findByLoginOrUsernameGlobal(login);
+                    Long tenantFromToken = tokenService.getTenantIdFromToken(token);
+                    if (tenantFromToken != null) {
+                        // Define o tenant antes de materializar Usuario (@TenantId), evitando conflito com TenantContext vazio (tenant=0).
+                        TenantContext.setCurrentTenant(tenantFromToken);
+                    }
+
+                    Usuario usuario = usuarioRepository.findByLoginOrUsername(login, login);
                     if (usuario != null) {
-                        Long tenantFromToken = tokenService.getTenantIdFromToken(token);
                         Long tenantIdUsuario = usuario.getTenantId();
                         if (tenantFromToken != null && tenantIdUsuario != null
                                 && !tenantFromToken.equals(tenantIdUsuario)) {
                             logger.warn("Token rejeitado: tenantId do JWT não confere com o usuário (login={})", login);
                         } else {
-                            TenantContext.setCurrentTenant(tenantIdUsuario);
+                            // TenantContext já foi definido com o claim; aqui mantemos apenas logging/auth.
                             logger.debug("Auth JWT: login={}, tenant={}", login, tenantIdUsuario);
                             UserDetails user = usuario;
                             var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

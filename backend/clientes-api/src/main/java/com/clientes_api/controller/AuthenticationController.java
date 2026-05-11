@@ -156,7 +156,8 @@ public class AuthenticationController {
             }
 
             String login = auth.getName();
-            Usuario usuarioAtualizado = repository.findByLoginOrUsernameGlobal(login);
+            // Busca tenant-aware para evitar conflito com @TenantId quando TenantContext estiver setado.
+            Usuario usuarioAtualizado = repository.findByLoginOrUsername(login, login);
             if (usuarioAtualizado == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", "Usuário não encontrado."));
             }
