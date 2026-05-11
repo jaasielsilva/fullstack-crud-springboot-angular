@@ -7,6 +7,8 @@ import com.clientes_api.model.Usuario;
 import com.clientes_api.model.enums.StatusAssinatura;
 import com.clientes_api.model.UsuarioRole;
 import com.clientes_api.repository.UsuarioRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -19,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class TrialTenantUserBootstrapService {
+
+    private static final Logger log = LoggerFactory.getLogger(TrialTenantUserBootstrapService.class);
 
     private final UsuarioRepository usuarioRepository;
     private final AssinaturaService assinaturaService;
@@ -34,8 +38,18 @@ public class TrialTenantUserBootstrapService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Usuario criarAdminEAssinaturaTrial(Long tenantId, PublicTrialRegistrationDTO dados) {
+        log.info(
+                "TRIAL-BOOT | Início transação REQUIRES_NEW (admin + assinatura) | tenantId={} | loginAdmin={}",
+                tenantId,
+                dados.email().trim().toLowerCase()
+        );
         Long previous = TenantContext.getCurrentTenant();
+        log.info("TRIAL-BOOT | TenantContext atual (antes do bootstrap) | tenantId={}", previous);
         TenantContext.setCurrentTenant(tenantId);
+        log.info(
+                "TRIAL-BOOT | TenantContext após set (Hibernate multi-tenant para persistência) | tenantId={}",
+                TenantContext.getCurrentTenant()
+        );
         try {
             Usuario admin = new Usuario();
             admin.setLogin(dados.email().trim().toLowerCase());
@@ -45,19 +59,32 @@ public class TrialTenantUserBootstrapService {
             admin.setTenantId(tenantId);
             admin.setRedefinirSenha(false);
             admin = usuarioRepository.save(admin);
+            log.info(
+                    "TRIAL-BOOT | Usuário ADMIN persistido (JPA) | userId={} | tenantId={} | role={}",
+                    admin.getId(),
+                    tenantId,
+                    admin.getRole()
+            );
 
             Assinatura assinatura = new Assinatura();
             assinatura.setTenantId(tenantId);
             assinatura.setStatus(StatusAssinatura.TRIAL);
             assinatura.setPlano(null);
             assinaturaService.salvar(assinatura);
+            log.info(
+                    "TRIAL-BOOT | Assinatura TRIAL persistida | tenantId={} | status={}",
+                    tenantId,
+                    StatusAssinatura.TRIAL
+            );
 
             return admin;
         } finally {
             if (previous != null) {
                 TenantContext.setCurrentTenant(previous);
+                log.info("TRIAL-BOOT | TenantContext restaurado | tenantId={}", previous);
             } else {
                 TenantContext.clear();
+                log.info("TRIAL-BOOT | TenantContext limpo ao sair do bootstrap");
             }
         }
     }

@@ -35,8 +35,8 @@ public class TenantService {
 
     @Transactional
     public Tenant cadastrarEmpresa(TenantRegistrationDTO data) {
-        logger.info("Iniciando onboarding para a empresa: {}", data.nomeEmpresa());
-        
+        logger.info("TENANT | Início onboarding corporativo | nomeEmpresa={} | cnpj={}", data.nomeEmpresa(), data.cnpj());
+
         try {
             // 1. Cria a Empresa
             Tenant novoTenant = new Tenant();
@@ -47,15 +47,26 @@ public class TenantService {
             novoTenant.setTrialFim(null);
             novoTenant.setAtivo(true);
             tenantRepository.save(novoTenant);
-            logger.info("Tenant criado com ID: {}", novoTenant.getId());
+            logger.info(
+                    "TENANT | Empresa persistida (Hibernate JPA) | tenantId={} | nome={} | ativo={}",
+                    novoTenant.getId(),
+                    novoTenant.getNome(),
+                    novoTenant.getAtivo()
+            );
 
             // 2. Prepara os dados de Auditoria (Manual para a Native Query)
             String creator = SecurityContextHolder.getContext().getAuthentication().getName();
             LocalDateTime now = LocalDateTime.now();
             String senhaCripto = new BCryptPasswordEncoder().encode(data.senhaAdmin());
-            
+            logger.info(
+                    "TENANT | Inserindo ADMIN via native SQL (fora do filtro Hibernate tenant) | tenantId={} | emailAdmin={} | createdBy={}",
+                    novoTenant.getId(),
+                    data.emailAdmin(),
+                    creator
+            );
+
             // 3. Insere o Administrador com todos os campos necessários (Auditoria + Tenant)
-            entityManager.createNativeQuery(
+            int inserted = entityManager.createNativeQuery(
                 "INSERT INTO usuarios (login, username, senha, role, tenant_id, redefinir_senha, created_at, updated_at, created_by, updated_by) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             )
@@ -71,10 +82,16 @@ public class TenantService {
             .setParameter(10, creator)
             .executeUpdate();
 
-            logger.info("Administrador inicial {} criado para o Tenant {}", data.emailAdmin(), novoTenant.getId());
+            logger.info(
+                    "TENANT | Native INSERT usuarios concluído | linhasAfetadas={} | tenantId={} | emailAdmin={}",
+                    inserted,
+                    novoTenant.getId(),
+                    data.emailAdmin()
+            );
+            logger.info("TENANT | Onboarding concluído | tenantId={} | adminEmail={}", novoTenant.getId(), data.emailAdmin());
             return novoTenant;
         } catch (Exception e) {
-            logger.error("Erro no onboarding: {}", e.getMessage());
+            logger.error("TENANT | Falha no onboarding | nomeEmpresa={} | mensagem={}", data.nomeEmpresa(), e.getMessage());
             throw new RuntimeException("Falha ao cadastrar empresa: " + e.getMessage());
         }
     }

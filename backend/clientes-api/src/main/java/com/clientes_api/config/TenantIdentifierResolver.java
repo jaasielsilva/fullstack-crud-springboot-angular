@@ -1,24 +1,25 @@
 package com.clientes_api.config;
 
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver<Long> {
 
-    private static final Logger logger = LoggerFactory.getLogger(TenantIdentifierResolver.class);
-
+    /**
+     * Chamado pelo Hibernate em cada operação de persistência/consulta multi-tenant.
+     * Com {@code tenantId == null} retorna {@code 0L} (rotas públicas, jobs, bootstrap).
+     * O rastreio SLF4J do tenant fica em {@code AutenticacaoService}, {@code SecurityFilter},
+     * fluxos de trial e {@code SubscriptionSnapshotService} (evita ruído por volume de chamadas).
+     */
     @Override
     public Long resolveCurrentTenantIdentifier() {
         Long tenantId = TenantContext.getCurrentTenant();
-        
+
         if (tenantId == null) {
-            // Em caso de tarefas em background ou inicialização sem contexto
-            return 0L; 
+            return 0L;
         }
-        
+
         return tenantId;
     }
 

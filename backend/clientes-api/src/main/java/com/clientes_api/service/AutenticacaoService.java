@@ -21,20 +21,28 @@ public class AutenticacaoService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        logger.info("Tentativa de login para o usuário: {}", username);
-
         String loginNormalized = username == null ? null : username.trim().toLowerCase();
+        logger.info("AUTH | UserDetailsService.loadUserByUsername | loginRecebido={}", username);
 
         // Em rotas sem JWT (ex: /api/auth/login), o TenantContext pode estar vazio.
         // Como o Hibernate valida @TenantId, precisamos setar o tenant antes de materializar Usuario.
         Long previousTenant = TenantContext.getCurrentTenant();
+        logger.info("AUTH | TenantContext atual (antes da resolução multi-tenant) | tenantId={}", previousTenant);
+
         Long tenantId = repository.findTenantIdByLoginOrUsernameGlobal(loginNormalized);
         if (tenantId == null) {
-            logger.warn("Usuário não encontrado no banco de dados (Busca Global): {}", username);
+            logger.warn(
+                    "AUTH | Tenant não resolvido (lookup global) | loginNormalizado={} | motivo=usuario_inexistente_ou_sem_tenant",
+                    loginNormalized
+            );
             throw new UsernameNotFoundException("Usuário não encontrado!");
         }
 
+        logger.info("AUTH | Tenant encontrado (lookup global) | tenantId={} | loginNormalizado={}", tenantId, loginNormalized);
+
         TenantContext.setCurrentTenant(tenantId);
+        logger.info("AUTH | TenantContext após set ( Hibernate @TenantId / filtros) | tenantId={}", TenantContext.getCurrentTenant());
+
         Usuario usuario;
         try {
             // Agora a consulta respeita o tenant (multi-tenancy) e evita conflito com @TenantId
@@ -43,24 +51,40 @@ public class AutenticacaoService implements UserDetailsService {
             // Restaura o contexto original para não vazar tenant entre requisições.
             if (previousTenant != null) {
                 TenantContext.setCurrentTenant(previousTenant);
+                logger.info("AUTH | TenantContext restaurado após materialização Usuario | tenantId={}", previousTenant);
             } else {
                 TenantContext.clear();
+                logger.info("AUTH | TenantContext limpo após materialização Usuario (sem tenant prévio na thread)");
             }
         }
 
         if (usuario == null) {
-            logger.warn("Usuário não encontrado no banco de dados (Login/Username com tenant): {}", username);
+            logger.warn(
+                    "AUTH | Usuário não encontrado após escopo tenant | loginNormalizado={} | tenantIdEsperado={}",
+                    loginNormalized,
+                    tenantId
+            );
             throw new UsernameNotFoundException("Usuário não encontrado!");
         }
 
-        // 2. Verifica se a empresa (Tenant) está ativa
-        // Agora o Java reconhece o getTenant() pois a variável é do tipo Usuario
+        logger.info(
+                "AUTH | Usuário encontrado | userId={} | tenantId={} | login={} | role={}",
+                usuario.getId(),
+                usuario.getTenantId(),
+                usuario.getLogin(),
+                usuario.getRole()
+        );
+
         if (usuario.getTenant() != null && !usuario.getTenant().getAtivo()) {
-            logger.warn("Tentativa de login em empresa inativa: {}", usuario.getTenant().getNome());
+            logger.warn(
+                    "AUTH | Login bloqueado | empresa_inativa | tenantId={} | nomeEmpresa={}",
+                    usuario.getTenantId(),
+                    usuario.getTenant().getNome()
+            );
             throw new RuntimeException("Sua empresa está inativa. Entre em contato com o suporte.");
         }
-        
-        logger.info("Usuário encontrado e empresa ativa. Verificando credenciais...");
+
+        logger.info("AUTH | Pré-checagem de senha (PasswordEncoder) | userId={} | tenantId={}", usuario.getId(), usuario.getTenantId());
         return usuario;
     }
 }

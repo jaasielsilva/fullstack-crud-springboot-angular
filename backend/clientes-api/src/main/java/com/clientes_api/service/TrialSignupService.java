@@ -7,6 +7,8 @@ import com.clientes_api.model.Usuario;
 import com.clientes_api.model.enums.StatusEmpresa;
 import com.clientes_api.repository.TenantRepository;
 import com.clientes_api.repository.UsuarioRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,8 @@ import java.time.LocalDateTime;
  */
 @Service
 public class TrialSignupService {
+
+    private static final Logger log = LoggerFactory.getLogger(TrialSignupService.class);
 
     private static final int DIAS_TRIAL = 7;
 
@@ -34,13 +38,22 @@ public class TrialSignupService {
 
     @Transactional
     public Usuario cadastrarTrial(PublicTrialRegistrationDTO dados) {
+        log.info(
+                "TRIAL | Início cadastro trial | empresaNome={} | email={} | diasTrial={}",
+                dados.nomeEmpresa().trim(),
+                dados.email().trim().toLowerCase(),
+                DIAS_TRIAL
+        );
         if (usuarioRepository.countByLoginGlobal(dados.email().trim()) > 0) {
+            log.warn("TRIAL | Cadastro recusado | motivo=email_ja_cadastrado_como_usuario | email={}", dados.email().trim());
             throw new BusinessException("Já existe usuário com este e-mail.");
         }
         if (tenantRepository.existsByNomeIgnoreCase(dados.nomeEmpresa().trim())) {
+            log.warn("TRIAL | Cadastro recusado | motivo=nome_empresa_duplicado | empresaNome={}", dados.nomeEmpresa().trim());
             throw new BusinessException("Já existe empresa cadastrada com este nome.");
         }
         if (tenantRepository.existsByEmailIgnoreCase(dados.email().trim())) {
+            log.warn("TRIAL | Cadastro recusado | motivo=email_vinculado_outra_empresa | email={}", dados.email().trim());
             throw new BusinessException("Este e-mail já está vinculado a outra empresa.");
         }
 
@@ -55,7 +68,20 @@ public class TrialSignupService {
         empresa.setTrialInicio(inicio);
         empresa.setTrialFim(fim);
         empresa = tenantRepository.save(empresa);
+        log.info(
+                "TRIAL | Tenant persistido (Hibernate) | tenantId={} | status={} | trialInicio={} | trialFim={}",
+                empresa.getId(),
+                empresa.getStatus(),
+                inicio,
+                fim
+        );
 
-        return trialTenantUserBootstrapService.criarAdminEAssinaturaTrial(empresa.getId(), dados);
+        Usuario admin = trialTenantUserBootstrapService.criarAdminEAssinaturaTrial(empresa.getId(), dados);
+        log.info(
+                "TRIAL | Cadastro trial concluído | tenantId={} | adminUserId={}",
+                empresa.getId(),
+                admin.getId()
+        );
+        return admin;
     }
 }

@@ -1,12 +1,15 @@
 package com.clientes_api.controller;
 
 import com.clientes_api.dto.*;
+import com.clientes_api.config.SecurityLoggingSupport;
 import com.clientes_api.service.EmailService;
 import com.clientes_api.security.TokenService;
 import com.clientes_api.model.Usuario;
 import com.clientes_api.repository.UsuarioRepository;
 import com.clientes_api.service.SubscriptionSnapshotService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +37,8 @@ import java.util.List;
 @RequestMapping("/api/auth")
 public class AuthenticationController {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthenticationController.class);
+
     @Autowired
     private AuthenticationManager authenticationManager;
 
@@ -49,19 +54,45 @@ public class AuthenticationController {
     @Autowired
     private SubscriptionSnapshotService subscriptionSnapshotService;
 
+    @Autowired
+    private SecurityLoggingSupport securityLoggingSupport;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid AuthenticationDTO data) {
-        // ... (login implementation remains same)
+        String loginRecebido = data.login() == null ? null : data.login().trim();
+        log.info("AUTH | Início do fluxo de login | loginRecebido={}", loginRecebido);
         try {
             var usernamePassword = new UsernamePasswordAuthenticationToken(data.login(), data.senha());
+            log.info("AUTH | Credenciais repassadas ao AuthenticationManager | login={}", loginRecebido);
             var auth = this.authenticationManager.authenticate(usernamePassword);
             Usuario principal = (Usuario) auth.getPrincipal();
+            log.info(
+                    "AUTH | Resultado da autenticação | sucesso=true | userId={} | tenantId={} | login={} | role={}",
+                    principal.getId(),
+                    principal.getTenantId(),
+                    principal.getLogin(),
+                    principal.getRole()
+            );
             var token = tokenService.gerarToken(principal);
             var snapshot = subscriptionSnapshotService.montar(principal.getTenantId());
+            log.info(
+                    "AUTH | Login concluído | userId={} | tenantId={} | subscriptionStatus={}",
+                    principal.getId(),
+                    principal.getTenantId(),
+                    snapshot.assinaturaStatus()
+            );
             return ResponseEntity.ok(new LoginResponseDTO(token, snapshot));
         } catch (BadCredentialsException e) {
+            log.warn("AUTH | Resultado da autenticação | sucesso=false | motivo=credenciais_invalidas | login={}", loginRecebido);
+            if (securityLoggingSupport.isVerboseAuthErrorLogging()) {
+                log.warn("AUTH | Detalhe (ambiente não-produção)", e);
+            }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", "Email ou senha incorretos."));
         } catch (Exception e) {
+            log.error("AUTH | Resultado da autenticação | sucesso=false | motivo=erro_interno | login={}", loginRecebido);
+            if (securityLoggingSupport.isVerboseAuthErrorLogging()) {
+                log.error("AUTH | Stack trace (ambiente não-produção)", e);
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("erro", "Erro ao realizar login."));
         }
     }
@@ -122,8 +153,10 @@ public class AuthenticationController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterDTO data) {
+        log.info("AUTH | Início registro de usuário (endpoint legado) | login={}", data.login());
         try {
             if (this.repository.findByLogin(data.login()) != null) {
+                log.warn("AUTH | Registro recusado | motivo=email_duplicado | login={}", data.login());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                         Map.of("erro", "Já existe um usuário cadastrado com este e-mail.")
                 );
@@ -135,11 +168,21 @@ public class AuthenticationController {
             newUser.setUsername(data.username());
 
             this.repository.save(newUser);
+            log.info(
+                    "AUTH | Usuário persistido (register) | userId={} | tenantId={} | login={}",
+                    newUser.getId(),
+                    newUser.getTenantId(),
+                    newUser.getLogin()
+            );
 
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     Map.of("mensagem", "Usuário criado com sucesso!")
             );
         } catch (Exception e) {
+            log.error("AUTH | Erro ao cadastrar usuário | login={}", data.login());
+            if (securityLoggingSupport.isVerboseAuthErrorLogging()) {
+                log.error("AUTH | Stack trace (ambiente não-produção)", e);
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     Map.of("erro", "Ocorreu um erro ao cadastrar o usuário.")
             );
@@ -149,9 +192,11 @@ public class AuthenticationController {
     @PostMapping("/refresh")
     @Operation(summary = "Reemite o token com a role atual do banco (útil após o admin liberar permissão)")
     public ResponseEntity<?> refresh() {
+        log.info("AUTH | Início refresh de JWT");
         try {
             org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated()) {
+                log.warn("AUTH | Refresh negado | motivo=sessao_invalida");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", "Sessão inválida."));
             }
 
@@ -159,13 +204,25 @@ public class AuthenticationController {
             // Busca tenant-aware para evitar conflito com @TenantId quando TenantContext estiver setado.
             Usuario usuarioAtualizado = repository.findByLoginOrUsername(login, login);
             if (usuarioAtualizado == null) {
+                log.warn("AUTH | Refresh negado | motivo=usuario_nao_encontrado | login={}", login);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", "Usuário não encontrado."));
             }
 
+            log.info(
+                    "AUTH | Refresh | userId={} | tenantId={} | login={}",
+                    usuarioAtualizado.getId(),
+                    usuarioAtualizado.getTenantId(),
+                    login
+            );
             String token = tokenService.gerarToken(usuarioAtualizado);
             var snapshot = subscriptionSnapshotService.montar(usuarioAtualizado.getTenantId());
+            log.info("AUTH | Refresh concluído | tenantId={}", usuarioAtualizado.getTenantId());
             return ResponseEntity.ok(new LoginResponseDTO(token, snapshot));
         } catch (Exception e) {
+            log.error("AUTH | Erro no refresh de token");
+            if (securityLoggingSupport.isVerboseAuthErrorLogging()) {
+                log.error("AUTH | Stack trace (ambiente não-produção)", e);
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("erro", "Erro ao renovar token."));
         }
     }
