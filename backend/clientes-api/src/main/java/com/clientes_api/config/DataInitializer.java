@@ -12,9 +12,10 @@ import com.clientes_api.repository.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -33,6 +34,15 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private PlanoRepository planoRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Value("${app.admin.email:admin@lexcrm.com.br}")
+    private String adminEmail;
+
+    @Value("${app.admin.senha:admin@LexCRM2025}")
+    private String adminSenha;
 
     @Override
     public void run(String... args) throws Exception {
@@ -63,16 +73,19 @@ public class DataInitializer implements CommandLineRunner {
 
             // Se não houver tenants, criamos um padrão
             Tenant defaultTenant;
-            if (tenantRepository.count() == 0) {
+            if (!tenantRepository.existsByEmailIgnoreCase(adminEmail)) {
                 Tenant matriz = new Tenant("LexCRM Matriz");
                 matriz.setStatus(StatusEmpresa.ATIVA);
-                matriz.setEmail("admin@lexcrm.com.br");
+                matriz.setEmail(adminEmail);
                 matriz.setTrialInicio(null);
                 matriz.setTrialFim(null);
                 defaultTenant = tenantRepository.save(matriz);
                 logger.info("✅ Tenant padrão criado: {}", defaultTenant.getNome());
             } else {
-                defaultTenant = tenantRepository.findAll().get(0);
+                defaultTenant = tenantRepository.findAll().stream()
+                        .filter(t -> adminEmail.equalsIgnoreCase(t.getEmail()))
+                        .findFirst()
+                        .orElse(tenantRepository.findAll().get(0));
                 logger.info("ℹ️ Utilizando Tenant existente: {}", defaultTenant.getNome());
             }
 
@@ -80,20 +93,22 @@ public class DataInitializer implements CommandLineRunner {
             TenantContext.setCurrentTenant(defaultTenant.getId());
             logger.info("Contexto de Tenant definido para ID: {}", defaultTenant.getId());
 
-            // Verifica se o banco de dados de usuários está vazio
-            if (repository.count() == 0) {
-                logger.info("Banco de usuários vazio. Criando administrador padrão...");
-                
-                String encryptedPassword = new BCryptPasswordEncoder().encode("123");
-                
-                Usuario admin = new Usuario("admin@lexcrm.com.br", encryptedPassword, UsuarioRole.ADMIN);
+            // Usa query global (sem filtro de tenant) para verificar se o admin já existe
+            if (repository.countByLoginGlobal(adminEmail) == 0) {
+                logger.info("Admin não encontrado. Criando administrador padrão...");
+
+                String encryptedPassword = passwordEncoder.encode(adminSenha);
+
+                Usuario admin = new Usuario(adminEmail, encryptedPassword, UsuarioRole.ADMIN);
                 admin.setUsername("admin.lex");
                 admin.setTenantId(defaultTenant.getId()); // Vincula ao tenant
                 admin.setRedefinirSenha(false); // Admin matriz não precisa resetar
-                
+
                 repository.save(admin);
-                
-                logger.info("✅ Usuário admin@lexcrm.com.br criado com sucesso.");
+
+                logger.info("✅ Usuário {} criado com sucesso.", adminEmail);
+            } else {
+                logger.info("ℹ️ Admin {} já existe, pulando criação.", adminEmail);
             }
         } catch (Exception e) {
             logger.error("❌ ERRO CRÍTICO NA INICIALIZAÇÃO: {}", e.getMessage(), e);
