@@ -56,8 +56,8 @@ public class TrialTenantUserBootstrapService {
             admin.setUsername(dados.nomeResponsavel().trim());
             admin.setSenha(passwordEncoder.encode(dados.senha()));
             admin.setRole(UsuarioRole.ADMIN);
+            admin.setTenantId(tenantId);
             admin.setRedefinirSenha(false);
-            // tenant_id é gerenciado pelo @TenantId do Hibernate via TenantContext (já setado acima)
             admin = usuarioRepository.save(admin);
             log.info(
                     "TRIAL-BOOT | Usuário ADMIN persistido (JPA) | userId={} | tenantId={} | role={}",
@@ -67,7 +67,7 @@ public class TrialTenantUserBootstrapService {
             );
 
             Assinatura assinatura = new Assinatura();
-            // tenant_id é gerenciado pelo @TenantId do Hibernate via TenantContext (já setado acima)
+            assinatura.setTenantId(tenantId);
             assinatura.setStatus(StatusAssinatura.TRIAL);
             assinatura.setPlano(null);
             assinaturaService.salvar(assinatura);

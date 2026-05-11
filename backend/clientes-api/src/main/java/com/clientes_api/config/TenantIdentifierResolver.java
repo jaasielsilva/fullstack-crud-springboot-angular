@@ -7,15 +7,15 @@ import org.springframework.stereotype.Component;
 public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver<Long> {
 
     /**
-     * Chamado pelo Hibernate em cada operação de persistência/consulta multi-tenant.
-     * Retorna {@code null} quando não há tenant no contexto (rotas públicas, jobs, bootstrap),
-     * sinalizando ao Hibernate que não deve aplicar filtro de tenant nessa operação.
-     * Retornar {@code 0L} causava o erro "assigned tenant id differs from current tenant id [N != 0]"
-     * porque o Hibernate fixava o tenant da sessão como 0 antes da entidade ser persistida com tenant real.
+     * Chamado pelo Hibernate em cada operação de persistência/consulta.
+     * Retorna 0L quando não há tenant no contexto (rotas públicas, jobs, bootstrap).
+     * O isolamento real é feito via @PrePersist no AuditModel e queries nativas globais.
+     * Não usamos @TenantId do Hibernate para evitar conflitos de validação de sessão.
      */
     @Override
     public Long resolveCurrentTenantIdentifier() {
-        return TenantContext.getCurrentTenant();
+        Long tenantId = TenantContext.getCurrentTenant();
+        return (tenantId != null) ? tenantId : 0L;
     }
 
     /**
