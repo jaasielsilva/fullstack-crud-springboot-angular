@@ -131,8 +131,8 @@ public class CheckoutMercadoPagoService {
                     "Cadastre um e-mail válido na empresa ou use login com e-mail para o checkout (exigência Mercado Pago).");
         }
         payer.put("email", email);
-        MercadoPagoPreferenciaUtil.preencherPayerIdentificacaoBrasil(payer, empresa.getDocumento());
-        MercadoPagoPreferenciaUtil.preencherPayerTelefoneBrasil(payer, empresa.getTelefone());
+        // Não enviar identification/phone sem validação forte: CNPJ/CPF inválido ou telefone
+        // mal interpretado (ex.: sem DDD) deixa o checkout MP com o botão "Pagar" desabilitado.
 
         root.put("external_reference", externalReference);
         root.put("notification_url", notificationUrl);

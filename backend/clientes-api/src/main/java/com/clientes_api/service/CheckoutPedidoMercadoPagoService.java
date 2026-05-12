@@ -106,11 +106,7 @@ public class CheckoutPedidoMercadoPagoService {
                     "Cadastre um e-mail válido no cliente ou na empresa para gerar cobrança (exigência Mercado Pago).");
         }
         payer.put("email", email);
-        MercadoPagoPreferenciaUtil.preencherPayerIdentificacaoBrasil(payer, empresa.getDocumento());
-        String telCliente = pedido.getCliente().getTelefone();
-        MercadoPagoPreferenciaUtil.preencherPayerTelefoneBrasil(
-                payer,
-                telCliente != null && !telCliente.isBlank() ? telCliente : empresa.getTelefone());
+        // identification/phone omitidos: dados inválidos ou ambíguos desabilitam o botão Pagar no checkout MP.
 
         root.put("external_reference", externalReference);
         root.put("notification_url", notificationUrl);
