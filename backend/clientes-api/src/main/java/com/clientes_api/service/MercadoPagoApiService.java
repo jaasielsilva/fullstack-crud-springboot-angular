@@ -1,7 +1,9 @@
 package com.clientes_api.service;
 
 import com.clientes_api.exception.BusinessException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,24 +21,39 @@ public class MercadoPagoApiService {
     private static final int MAX_MP_ERROR_BODY = 1200;
 
     private final RestClient mercadoPagoRestClient;
+    private final ObjectMapper objectMapper;
 
     @Value("${mercadopago.access-token:}")
     private String accessToken;
 
-    public MercadoPagoApiService(RestClient mercadoPagoRestClient) {
+    public MercadoPagoApiService(RestClient mercadoPagoRestClient, ObjectMapper objectMapper) {
         this.mercadoPagoRestClient = mercadoPagoRestClient;
+        this.objectMapper = objectMapper;
     }
 
+    /**
+     * Envia JSON como {@link String}: no Spring Boot 4 o {@code RestClient} pode usar outro Jackson
+     * na conversão de {@link JsonNode}, resultando em corpo inválido (ex.: Mercado Pago {@code items needed}).
+     */
     public JsonNode criarPreferencia(JsonNode corpo) {
         validarToken();
+        final String json;
         try {
-            return mercadoPagoRestClient.post()
+            json = objectMapper.writeValueAsString(corpo);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("Falha ao serializar JSON da preferência Mercado Pago.");
+        }
+        try {
+            String responseBody = mercadoPagoRestClient.post()
                     .uri("/checkout/preferences")
                     .header("Authorization", "Bearer " + accessToken.trim())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(corpo)
+                    .body(json)
                     .retrieve()
-                    .body(JsonNode.class);
+                    .body(String.class);
+            return objectMapper.readTree(responseBody);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("Resposta inválida do Mercado Pago ao criar preferência.");
         } catch (RestClientResponseException e) {
             throw preferenciaException(e);
         }
@@ -45,11 +62,14 @@ public class MercadoPagoApiService {
     public JsonNode buscarPagamento(String paymentId) {
         validarToken();
         try {
-            return mercadoPagoRestClient.get()
+            String responseBody = mercadoPagoRestClient.get()
                     .uri("/v1/payments/{id}", paymentId)
                     .header("Authorization", "Bearer " + accessToken.trim())
                     .retrieve()
-                    .body(JsonNode.class);
+                    .body(String.class);
+            return objectMapper.readTree(responseBody);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("Resposta inválida do Mercado Pago ao consultar pagamento.");
         } catch (RestClientResponseException e) {
             String body = safeResponseBody(e);
             log.warn("Mercado Pago buscarPagamento falhou: http={} paymentId={} body={}",
