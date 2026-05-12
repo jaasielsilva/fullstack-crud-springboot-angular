@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 /**
  * Gera preferência Mercado Pago para pagamento total de um pedido B2B (external_reference {@link PedidoMercadoPagoExternalReference}).
@@ -27,6 +26,7 @@ public class CheckoutPedidoMercadoPagoService {
     private final MercadoPagoApiService mercadoPagoApiService;
     private final PedidoRepository pedidoRepository;
     private final ObjectMapper objectMapper;
+    private final MercadoPagoValorPreferenciaService mercadoPagoValorPreferenciaService;
 
     @Value("${mercadopago.notification-url}")
     private String notificationUrl;
@@ -39,10 +39,12 @@ public class CheckoutPedidoMercadoPagoService {
 
     public CheckoutPedidoMercadoPagoService(MercadoPagoApiService mercadoPagoApiService,
                                             PedidoRepository pedidoRepository,
-                                            ObjectMapper objectMapper) {
+                                            ObjectMapper objectMapper,
+                                            MercadoPagoValorPreferenciaService mercadoPagoValorPreferenciaService) {
         this.mercadoPagoApiService = mercadoPagoApiService;
         this.pedidoRepository = pedidoRepository;
         this.objectMapper = objectMapper;
+        this.mercadoPagoValorPreferenciaService = mercadoPagoValorPreferenciaService;
     }
 
     @Transactional
@@ -83,9 +85,8 @@ public class CheckoutPedidoMercadoPagoService {
         item.put("description", "Pagamento do pedido para " + pedido.getCliente().getNome());
         item.put("quantity", 1);
         item.put("currency_id", "BRL");
-        // BRL: no máximo 2 decimais (Double quebrado → 400 do Mercado Pago).
-        BigDecimal unitPrice = BigDecimal.valueOf(pedido.getValorTotal()).setScale(2, RoundingMode.HALF_UP);
-        item.put("unit_price", unitPrice);
+        BigDecimal valorPedido = BigDecimal.valueOf(pedido.getValorTotal());
+        item.put("unit_price", mercadoPagoValorPreferenciaService.resolverPrecoUnitario(valorPedido));
 
         ObjectNode payer = root.putObject("payer");
         payer.put("name", pedido.getCliente().getNome());

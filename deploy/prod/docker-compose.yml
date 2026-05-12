@@ -53,6 +53,7 @@ services:
       MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-}
       MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://api.erpcorporativo.shop/api/webhooks/mercadopago}
       MERCADO_PAGO_PREFER_SANDBOX: ${MERCADO_PAGO_PREFER_SANDBOX:-false}
+      MERCADO_PAGO_CHECKOUT_VALOR_OVERRIDE: ${MERCADO_PAGO_CHECKOUT_VALOR_OVERRIDE:-}
     networks:
       - internal-prod
     ports:
