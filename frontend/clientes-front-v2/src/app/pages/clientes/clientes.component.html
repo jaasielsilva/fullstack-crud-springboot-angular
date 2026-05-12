@@ -92,7 +92,7 @@
                       <button class="btn btn-sm btn-light text-primary border-0" (click)="editar(c)" title="Editar">
                         <i class="bi bi-pencil-square"></i>
                       </button>
-                      <button class="btn btn-sm btn-light text-danger border-0" (click)="deletar(c.id!)" title="Excluir">
+                      <button class="btn btn-sm btn-light text-danger border-0" (click)="confirmarExcluir(c.id!)" title="Excluir">
                         <i class="bi bi-trash"></i>
                       </button>
                     </div>
@@ -159,3 +159,14 @@
     </button>
   </div>
 </div>
+
+<app-confirm-modal
+    [isOpen]="showConfirmModal"
+    title="Excluir cliente"
+    message="Deseja realmente excluir este cliente? Esta ação não poderá ser desfeita."
+    confirmText="Sim, excluir"
+    cancelText="Cancelar"
+    type="danger"
+    (confirm)="executarExclusao()"
+    (cancel)="fecharModalExcluir()">
+</app-confirm-modal>

@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ProdutoService } from './produto.service';
 import { Produto } from './produto.model';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-produtos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent],
   templateUrl: './produtos.component.html',
   styleUrl: './produtos.component.css'
 })
@@ -26,6 +27,9 @@ export class ProdutosComponent implements OnInit {
   // Toast State
   mensagem = '';
   tipoMensagem: 'success' | 'danger' = 'success';
+
+  showConfirmModal = false;
+  idParaExcluir: number | null = null;
 
   constructor(private service: ProdutoService) {}
 
@@ -91,15 +95,28 @@ export class ProdutosComponent implements OnInit {
     this.mostrarForm = true; // Abre o painel
   }
 
-  deletar(id: number): void {
-    if (!confirm('Deseja realmente excluir este produto?')) return;
+  confirmarExcluir(id: number): void {
+    this.idParaExcluir = id;
+    this.showConfirmModal = true;
+  }
+
+  executarExclusao(): void {
+    if (this.idParaExcluir == null) return;
+    const id = this.idParaExcluir;
     this.service.deletar(id).subscribe({
       next: () => {
         this.produtos = this.produtos.filter(p => p.id !== id);
         this.alerta('Produto excluído com sucesso!', 'success');
+        this.showConfirmModal = false;
+        this.idParaExcluir = null;
       },
       error: (err: HttpErrorResponse) => this.alerta(this.mensagemErro(err), 'danger')
     });
+  }
+
+  fecharModalExcluir(): void {
+    this.showConfirmModal = false;
+    this.idParaExcluir = null;
   }
 
   resetar(): void {

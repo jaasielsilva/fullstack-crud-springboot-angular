@@ -8,6 +8,7 @@ import com.clientes_api.model.enums.StatusAssinatura;
 import com.clientes_api.model.enums.StatusEmpresa;
 import com.clientes_api.model.enums.StatusPagamento;
 import com.clientes_api.util.MercadoPagoExternalReference;
+import com.clientes_api.util.PedidoMercadoPagoExternalReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,15 +31,18 @@ public class MercadoPagoWebhookService {
     private final PagamentoService pagamentoService;
     private final AssinaturaService assinaturaService;
     private final EmpresaService empresaService;
+    private final PedidoService pedidoService;
 
     public MercadoPagoWebhookService(MercadoPagoApiService mercadoPagoApiService,
                                      PagamentoService pagamentoService,
                                      AssinaturaService assinaturaService,
-                                     EmpresaService empresaService) {
+                                     EmpresaService empresaService,
+                                     PedidoService pedidoService) {
         this.mercadoPagoApiService = mercadoPagoApiService;
         this.pagamentoService = pagamentoService;
         this.assinaturaService = assinaturaService;
         this.empresaService = empresaService;
+        this.pedidoService = pedidoService;
     }
 
     @Transactional
@@ -47,7 +51,6 @@ public class MercadoPagoWebhookService {
         String rawPayment = payment.toString();
 
         String mpStatus = payment.path("status").asText("unknown");
-        StatusPagamento statusPagamento = mapearStatusPagamento(mpStatus);
 
         if ("approved".equalsIgnoreCase(mpStatus)
                 && pagamentoService.jaAprovado(mercadoPagoPaymentId)) {
@@ -56,13 +59,34 @@ public class MercadoPagoWebhookService {
         }
 
         String externalRef = payment.path("external_reference").asText(null);
-        var parsedOpt = MercadoPagoExternalReference.parse(externalRef);
-        if (parsedOpt.isEmpty()) {
-            log.warn("external_reference inválido no pagamento MP {}: {}", mercadoPagoPaymentId, externalRef);
-            throw new IllegalArgumentException("external_reference inválido");
+        if (externalRef == null || externalRef.isBlank()) {
+            log.warn("Pagamento MP {} sem external_reference; ignorando.", mercadoPagoPaymentId);
+            return;
         }
-        MercadoPagoExternalReference parsed = parsedOpt.get();
 
+        StatusPagamento statusPagamento = mapearStatusPagamento(mpStatus);
+
+        var subOpt = MercadoPagoExternalReference.parse(externalRef);
+        if (subOpt.isPresent()) {
+            processarPagamentoAssinatura(subOpt.get(), mercadoPagoPaymentId, payment, rawPayment, statusPagamento, externalRef);
+            return;
+        }
+
+        var pedOpt = PedidoMercadoPagoExternalReference.parse(externalRef);
+        if (pedOpt.isPresent()) {
+            processarPagamentoPedido(pedOpt.get(), mercadoPagoPaymentId, payment, rawPayment, statusPagamento, externalRef);
+            return;
+        }
+
+        log.warn("external_reference não reconhecido (nem assinatura nem pedido): {} | payment={}", externalRef, mercadoPagoPaymentId);
+    }
+
+    private void processarPagamentoAssinatura(MercadoPagoExternalReference parsed,
+                                              String mercadoPagoPaymentId,
+                                              JsonNode payment,
+                                              String rawPayment,
+                                              StatusPagamento statusPagamento,
+                                              String externalRef) {
         TenantContext.setCurrentTenant(parsed.empresaId());
         try {
             Assinatura assinatura = assinaturaService.buscarPorIdETenantOuErro(parsed.assinaturaId(), parsed.empresaId());
@@ -76,6 +100,7 @@ public class MercadoPagoWebhookService {
                     .orElseGet(Pagamento::new);
             pagamento.setTenantId(parsed.empresaId());
             pagamento.setAssinatura(assinatura);
+            pagamento.setPedido(null);
             pagamento.setMercadoPagoPaymentId(mercadoPagoPaymentId);
             pagamento.setMercadoPagoPreferenceId(payment.path("preference_id").asText(null));
             pagamento.setStatus(statusPagamento);
@@ -89,10 +114,25 @@ public class MercadoPagoWebhookService {
             pagamentoService.salvar(pagamento);
 
             LocalDateTime agora = LocalDateTime.now();
-            aplicarRegraNegocio(mpStatus, assinatura, empresa, agora, mercadoPagoPaymentId);
+            aplicarRegraNegocio(payment.path("status").asText("unknown"), assinatura, empresa, agora, mercadoPagoPaymentId);
 
             assinaturaService.salvar(assinatura);
             empresaService.salvar(empresa);
+        } finally {
+            TenantContext.clear();
+        }
+    }
+
+    private void processarPagamentoPedido(PedidoMercadoPagoExternalReference ref,
+                                         String mercadoPagoPaymentId,
+                                         JsonNode payment,
+                                         String rawPayment,
+                                         StatusPagamento statusPagamento,
+                                         String externalRef) {
+        TenantContext.setCurrentTenant(ref.tenantId());
+        try {
+            pedidoService.processarWebhookMercadoPagoPedido(
+                    ref.pedidoId(), mercadoPagoPaymentId, payment, rawPayment, externalRef, statusPagamento);
         } finally {
             TenantContext.clear();
         }

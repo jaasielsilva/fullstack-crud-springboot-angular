@@ -74,7 +74,7 @@ public class TenantAccessFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (isAllowedPathWhenCommerciallyBlocked(path)) {
+        if (isAllowedPathWhenCommerciallyBlocked(path, request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -88,10 +88,13 @@ public class TenantAccessFilter extends OncePerRequestFilter {
         )));
     }
 
-    private boolean isAllowedPathWhenCommerciallyBlocked(String path) {
-        return path.startsWith("/api/auth/me")
+    private boolean isAllowedPathWhenCommerciallyBlocked(String path, String method) {
+        if (path.startsWith("/api/auth/me")
                 || path.startsWith("/api/auth/reset-password-forced")
                 || path.startsWith("/api/public/checkout")
-                || path.startsWith("/api/public/planos");
+                || path.startsWith("/api/public/planos")) {
+            return true;
+        }
+        return "POST".equalsIgnoreCase(method) && path.matches("/api/pedidos/\\d+/checkout");
     }
 }

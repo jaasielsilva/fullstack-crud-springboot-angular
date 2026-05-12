@@ -13,5 +13,9 @@ public class PedidoResponseDTO {
     private String status;
     private Double valorTotal;
     private LocalDateTime dataPedido;
+    /** Data em que o pagamento foi confirmado (webhook ou simulação). */
+    private LocalDateTime dataPagamento;
+    /** Última preferência Mercado Pago gerada para checkout do pedido. */
+    private String mercadoPagoPreferenceId;
     private List<ItemPedidoResponseDTO> itens;
 }

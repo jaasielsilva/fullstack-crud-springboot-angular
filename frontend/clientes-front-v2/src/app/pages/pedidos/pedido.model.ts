@@ -5,7 +5,14 @@ export interface Pedido {
   status: string;
   valorTotal: number;
   dataPedido: string;
+  dataPagamento?: string | null;
+  mercadoPagoPreferenceId?: string | null;
   itens?: ItemPedidoResponse[];
+}
+
+export interface CheckoutPedidoResponse {
+  checkoutUrl: string;
+  preferenceId: string;
 }
 
 export interface ItemPedidoResponse {

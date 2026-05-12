@@ -33,7 +33,7 @@ public class SecurityConfig {
     @Autowired
     private TenantAccessFilter tenantAccessFilter;
 
-    @Value("${app.cors.allowed-origins:http://localhost:4200}")
+    @Value("${app.cors.allowed-origins:https://erpcorporativo.shop,https://dev.erpcorporativo.shop,http://localhost:4200,http://127.0.0.1:4200}")
     private String allowedOriginsCsv;
 
     @Bean
