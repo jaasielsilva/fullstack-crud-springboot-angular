@@ -1,23 +1,21 @@
 package com.clientes_api.service;
 
-import com.clientes_api.model.Assinatura;
-import com.clientes_api.model.Tenant;
-import com.clientes_api.model.enums.StatusAssinatura;
-import com.clientes_api.model.enums.StatusEmpresa;
-import com.clientes_api.repository.AssinaturaRepository;
-import com.clientes_api.repository.TenantRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.clientes_api.model.Assinatura;
+import com.clientes_api.model.Tenant;
+import com.clientes_api.model.enums.StatusAssinatura;
+import com.clientes_api.model.enums.StatusEmpresa;
+import com.clientes_api.repository.AssinaturaRepository;
+import com.clientes_api.repository.TenantRepository;
 
-/**
- * Verifica empresas em TRIAL com período expirado e bloqueia quem não possui assinatura ATIVA válida.
- */
 @Service
 public class TrialService {
 
@@ -35,37 +33,109 @@ public class TrialService {
         this.empresaService = empresaService;
     }
 
-    /** Executado periodicamente; pode ser ajustado via cron em produção. */
     @Scheduled(cron = "${app.trial.verification-cron}")
     @Transactional
     public void expirarTrialsSemPagamento() {
+
         LocalDateTime agora = LocalDateTime.now();
-        List<Tenant> expirados = tenantRepository.findByStatusAndTrialFimBefore(StatusEmpresa.TRIAL, agora);
+
+        log.info("Iniciando verificação de trials expirados em {}", agora);
+
+        List<Tenant> expirados =
+                tenantRepository.findByStatusAndTrialFimBefore(
+                        StatusEmpresa.TRIAL,
+                        agora
+                );
+
+        log.info("Total de empresas TRIAL expiradas encontradas: {}", expirados.size());
 
         for (Tenant empresa : expirados) {
-            if (empresaService.isMatriz(empresa.getId())) {
-                continue;
-            }
-            boolean temAssinaturaAtiva = assinaturaRepository
-                    .findByTenantIdAndStatus(empresa.getId(), StatusAssinatura.ATIVA)
-                    .stream()
-                    .anyMatch(a -> a.getDataFim() == null || !a.getDataFim().isBefore(agora));
 
-            if (temAssinaturaAtiva) {
-                empresa.setStatus(StatusEmpresa.ATIVA);
+            try {
+
+                log.info(
+                        "Validando empresa ID={} Nome={}",
+                        empresa.getId(),
+                        empresa.getNome()
+                );
+
+                if (empresaService.isMatriz(empresa.getId())) {
+                    log.info(
+                            "Empresa ID={} ignorada por ser MATRIZ",
+                            empresa.getId()
+                    );
+                    continue;
+                }
+
+                boolean temAssinaturaAtiva = assinaturaRepository
+                        .findByTenantIdAndStatus(
+                                empresa.getId(),
+                                StatusAssinatura.ATIVA
+                        )
+                        .stream()
+                        .anyMatch(a ->
+                                a.getDataFim() == null
+                                        || !a.getDataFim().isBefore(agora)
+                        );
+
+                log.info(
+                        "Empresa ID={} possui assinatura ativa? {}",
+                        empresa.getId(),
+                        temAssinaturaAtiva
+                );
+
+                if (temAssinaturaAtiva) {
+
+                    empresa.setStatus(StatusEmpresa.ATIVA);
+
+                    tenantRepository.save(empresa);
+
+                    log.info(
+                            "Empresa ID={} reativada automaticamente",
+                            empresa.getId()
+                    );
+
+                    continue;
+                }
+
+                empresa.setStatus(StatusEmpresa.BLOQUEADA);
+
                 tenantRepository.save(empresa);
-                continue;
-            }
 
-            empresa.setStatus(StatusEmpresa.BLOQUEADA);
-            tenantRepository.save(empresa);
+                log.warn(
+                        "Empresa ID={} bloqueada por trial expirado",
+                        empresa.getId()
+                );
 
-            List<Assinatura> trials = assinaturaRepository.findByTenantIdAndStatus(empresa.getId(), StatusAssinatura.TRIAL);
-            for (Assinatura ass : trials) {
-                ass.setStatus(StatusAssinatura.EXPIRADA);
-                assinaturaRepository.save(ass);
+                List<Assinatura> trials =
+                        assinaturaRepository.findByTenantIdAndStatus(
+                                empresa.getId(),
+                                StatusAssinatura.TRIAL
+                        );
+
+                for (Assinatura ass : trials) {
+
+                    ass.setStatus(StatusAssinatura.EXPIRADA);
+
+                    assinaturaRepository.save(ass);
+
+                    log.info(
+                            "Assinatura ID={} marcada como EXPIRADA",
+                            ass.getId()
+                    );
+                }
+
+            } catch (Exception ex) {
+
+                log.error(
+                        "Erro ao processar empresa ID={}: {}",
+                        empresa.getId(),
+                        ex.getMessage(),
+                        ex
+                );
             }
-            log.info("Trial expirado: empresa {} bloqueada por falta de pagamento aprovado.", empresa.getId());
         }
+
+        log.info("Finalizada verificação de trials expirados");
     }
 }

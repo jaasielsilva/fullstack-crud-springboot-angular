@@ -165,3 +165,16 @@ Renovação SSL: o **Certbot** costuma instalar timer systemd (`certbot.timer`) 
 | `502` só pelo domínio | Nginx não recarregado ou `proxy_pass` apontando para porta errada |
 | Certificado inválido | DNS não apontava para o IP na hora do `certbot` — rode `certbot renew --dry-run` |
 | CORS | `APP_CORS_ALLOWED_ORIGINS` no `.env` do compose |
+
+---
+
+## 9) Credenciais de bootstrap (primeiro acesso)
+
+Após subir o stack com banco vazio, a API pode criar o **Super Admin** inicial. Os valores padrão podem ser sobrescritos por variáveis de ambiente (`APP_ADMIN_EMAIL`, `APP_ADMIN_SENHA`).
+
+| Campo | Valor padrão (apenas desenvolvimento / HML) |
+|-------|---------------------------------------------|
+| Email | `admin@lexcrm.com.br` |
+| Senha | `admin@LexCRM2025` |
+
+Em **produção**, defina credenciais fortes via `.env` e altere a senha no primeiro login. Não commite `.env` no Git.

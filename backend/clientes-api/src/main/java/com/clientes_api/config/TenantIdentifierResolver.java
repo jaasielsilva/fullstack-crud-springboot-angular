@@ -1,29 +1,31 @@
 package com.clientes_api.config;
 
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TenantIdentifierResolver implements CurrentTenantIdentifierResolver<Long> {
 
-    private static final Logger logger = LoggerFactory.getLogger(TenantIdentifierResolver.class);
-
+    /**
+     * Chamado pelo Hibernate em cada operação de persistência/consulta.
+     * Retorna 0L quando não há tenant no contexto (rotas públicas, jobs, bootstrap).
+     * O isolamento real é feito via @PrePersist no AuditModel e queries nativas globais.
+     * Não usamos @TenantId do Hibernate para evitar conflitos de validação de sessão.
+     */
     @Override
     public Long resolveCurrentTenantIdentifier() {
         Long tenantId = TenantContext.getCurrentTenant();
-        
-        if (tenantId == null) {
-            // Em caso de tarefas em background ou inicialização sem contexto
-            return 0L; 
-        }
-        
-        return tenantId;
+        return (tenantId != null) ? tenantId : 0L;
     }
 
+    /**
+     * Deve retornar {@code false} para permitir que o TenantContext mude durante a requisição
+     * (ex: bootstrap de trial, SubscriptionSnapshotService, DataInitializer).
+     * Com {@code true}, o Hibernate revalidaria o tenant da sessão existente e lançaria exceção
+     * quando o contexto muda de null/0 para o tenant real.
+     */
     @Override
     public boolean validateExistingCurrentSessions() {
-        return true;
+        return false;
     }
 }

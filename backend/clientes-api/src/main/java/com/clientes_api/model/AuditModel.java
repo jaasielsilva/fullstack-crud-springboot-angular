@@ -1,12 +1,11 @@
 package com.clientes_api.model;
 
+import com.clientes_api.config.TenantContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import lombok.Data;
-import com.clientes_api.config.TenantContext;
-import org.hibernate.annotations.TenantId;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -36,14 +35,21 @@ public abstract class AuditModel {
     @Column(name = "updated_by")
     private String updatedBy;
 
-    @TenantId
+    /**
+     * Coluna de isolamento multi-tenant.
+     * Gerenciado manualmente via @PrePersist + TenantContext.
+     * Não usa @TenantId do Hibernate para evitar conflito de validação de sessão
+     * ("assigned tenant id differs from current tenant id") e erro de boot
+     * ("no tenant identifier specified") quando TenantContext é null.
+     */
     @Column(name = "tenant_id", nullable = false)
     private Long tenantId;
 
     @PrePersist
     public void setTenantIdOnCreate() {
         if (this.tenantId == null) {
-            this.tenantId = TenantContext.getCurrentTenant();
+            Long ctx = TenantContext.getCurrentTenant();
+            this.tenantId = (ctx != null) ? ctx : 0L;
         }
     }
 }

@@ -1,7 +1,5 @@
 package com.clientes_api.service;
 
-import com.clientes_api.model.Usuario;
-import com.clientes_api.repository.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +7,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.clientes_api.config.TenantContext;
+import com.clientes_api.model.Usuario;
+import com.clientes_api.repository.UsuarioRepository;
 
 @Service
 public class AutenticacaoService implements UserDetailsService {
@@ -20,24 +22,38 @@ public class AutenticacaoService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        logger.info("Tentativa de login para o usuário: {}", username);
-        
-        // Busca o usuário usando nossa classe concreta para acessar os campos de Tenant
-        Usuario usuario = repository.findByLoginOrUsernameGlobal(username);
-        
-        if (usuario == null) {
-            logger.warn("Usuário não encontrado no banco de dados (Busca Global): {}", username);
+        String loginNormalized = username == null ? null : username.trim().toLowerCase();
+
+        logger.info("AUTH | loadUserByUsername | login={}", loginNormalized);
+
+        Long tenantId = repository.findTenantIdByLoginOrUsernameGlobal(loginNormalized);
+
+        if (tenantId == null) {
+            logger.warn("AUTH | Tenant não encontrado para login={}", loginNormalized);
             throw new UsernameNotFoundException("Usuário não encontrado!");
         }
 
-        // 2. Verifica se a empresa (Tenant) está ativa
-        // Agora o Java reconhece o getTenant() pois a variável é do tipo Usuario
-        if (usuario.getTenant() != null && !usuario.getTenant().getAtivo()) {
-            logger.warn("Tentativa de login em empresa inativa: {}", usuario.getTenant().getNome());
-            throw new RuntimeException("Sua empresa está inativa. Entre em contato com o suporte.");
+        logger.info("AUTH | Tenant resolvido | tenantId={}", tenantId);
+
+        TenantContext.setCurrentTenant(tenantId);
+
+        logger.info("AUTH | TenantContext setado | tenantId={}", TenantContext.getCurrentTenant());
+
+        Usuario usuario = repository.findByLoginOrUsername(loginNormalized, loginNormalized);
+
+        if (usuario == null) {
+            logger.warn("AUTH | Usuário não encontrado | login={} | tenantId={}", loginNormalized, tenantId);
+            throw new UsernameNotFoundException("Usuário não encontrado!");
         }
-        
-        logger.info("Usuário encontrado e empresa ativa. Verificando credenciais...");
+
+        logger.info(
+                "AUTH | Usuário encontrado | id={} | login={} | tenantId={} | role={}",
+                usuario.getId(),
+                usuario.getLogin(),
+                usuario.getTenantId(),
+                usuario.getRole()
+        );
+
         return usuario;
     }
 }
