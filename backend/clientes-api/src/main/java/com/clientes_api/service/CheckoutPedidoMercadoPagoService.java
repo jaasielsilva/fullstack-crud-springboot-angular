@@ -15,6 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
  * Gera preferência Mercado Pago para pagamento total de um pedido B2B (external_reference {@link PedidoMercadoPagoExternalReference}).
  */
@@ -80,7 +83,9 @@ public class CheckoutPedidoMercadoPagoService {
         item.put("description", "Pagamento do pedido para " + pedido.getCliente().getNome());
         item.put("quantity", 1);
         item.put("currency_id", "BRL");
-        item.put("unit_price", pedido.getValorTotal());
+        // BRL: no máximo 2 decimais (Double quebrado → 400 do Mercado Pago).
+        BigDecimal unitPrice = BigDecimal.valueOf(pedido.getValorTotal()).setScale(2, RoundingMode.HALF_UP);
+        item.put("unit_price", unitPrice);
 
         ObjectNode payer = root.putObject("payer");
         payer.put("name", pedido.getCliente().getNome());

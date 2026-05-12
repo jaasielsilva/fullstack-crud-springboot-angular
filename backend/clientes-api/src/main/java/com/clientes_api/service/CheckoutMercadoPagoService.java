@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.RoundingMode;
+
 /**
  * Cria assinatura {@link StatusAssinatura#PENDENTE} e preferência no Mercado Pago (valor só no backend).
  */
@@ -115,7 +117,7 @@ public class CheckoutMercadoPagoService {
                         : "Assinatura mensal para Adegas e Distribuidoras");
         item.put("quantity", 1);
         item.put("currency_id", "BRL");
-        item.put("unit_price", plano.getValor());
+        item.put("unit_price", plano.getValor().setScale(2, RoundingMode.HALF_UP));
 
         ObjectNode payer = root.putObject("payer");
         payer.put("name", empresa.getNome());
