@@ -54,7 +54,7 @@ services:
       MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-}
       MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://api.dev.erpcorporativo.shop/api/webhooks/mercadopago}
       MERCADO_PAGO_PREFER_SANDBOX: ${MERCADO_PAGO_PREFER_SANDBOX:-true}
-      # Opcional: ex. 1.00 para cobrar valor mínimo (planos e pedidos). Vazio = preço real.
+      # Opcional: ex. 1.00 — defina no .env (ver deploy/hml/.env.example). Sem a variável = preço real.
       MERCADO_PAGO_CHECKOUT_VALOR_OVERRIDE: ${MERCADO_PAGO_CHECKOUT_VALOR_OVERRIDE:-}
     networks:
       - internal-hml
