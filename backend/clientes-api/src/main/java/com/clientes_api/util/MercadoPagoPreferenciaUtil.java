@@ -9,8 +9,11 @@ import java.util.regex.Pattern;
  */
 public final class MercadoPagoPreferenciaUtil {
 
-    /** Categoria genérica aceita na API de preferências quando não há SKU Mercado Livre. */
-    public static final String ITEM_CATEGORY_PADRAO = "others";
+    /**
+     * Categoria Mercado Livre Brasil para software comercial / ERP (domínio MLB-COMMERCIAL_SOFTWARES).
+     * O valor genérico {@code "others"} pode gerar HTTP 400 na API de preferências em produção (Brasil).
+     */
+    public static final String ITEM_CATEGORY_PADRAO = "MLB1728";
 
     private static final Pattern EMAIL_SIMPLES = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
@@ -82,6 +85,9 @@ public final class MercadoPagoPreferenciaUtil {
             return;
         }
         String digits = documento.replaceAll("\\D", "");
+        if (digits.chars().distinct().count() <= 1) {
+            return;
+        }
         if (digits.length() == 14) {
             ObjectNode id = payer.putObject("identification");
             id.put("type", "CNPJ");
