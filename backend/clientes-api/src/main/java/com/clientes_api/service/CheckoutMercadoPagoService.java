@@ -124,15 +124,12 @@ public class CheckoutMercadoPagoService {
         item.put("unit_price", mercadoPagoValorPreferenciaService.resolverPrecoUnitario(plano.getValor()));
 
         ObjectNode payer = root.putObject("payer");
-        MercadoPagoPreferenciaUtil.preencherPayerNome(payer, empresa.getNome());
         String email = MercadoPagoPreferenciaUtil.primeiroEmailValido(empresa.getEmail(), usuarioLogado.getLogin());
         if (email == null) {
             throw new BusinessException(
                     "Cadastre um e-mail válido na empresa ou use login com e-mail para o checkout (exigência Mercado Pago).");
         }
         payer.put("email", email);
-        // Não enviar identification/phone sem validação forte: CNPJ/CPF inválido ou telefone
-        // mal interpretado (ex.: sem DDD) deixa o checkout MP com o botão "Pagar" desabilitado.
 
         root.put("external_reference", externalReference);
         root.put("notification_url", notificationUrl);

@@ -10,10 +10,10 @@ import java.util.regex.Pattern;
 public final class MercadoPagoPreferenciaUtil {
 
     /**
-     * Categoria Mercado Livre Brasil para software comercial / ERP (domínio MLB-COMMERCIAL_SOFTWARES).
-     * O valor genérico {@code "others"} pode gerar HTTP 400 na API de preferências em produção (Brasil).
+     * Categoria no formato aceito pela API de preferências (Checkout Pro), alinhada a payload mínimo validado.
+     * Evita {@code "others"} e IDs MLB longos que podem variar por ambiente.
      */
-    public static final String ITEM_CATEGORY_PADRAO = "MLB1728";
+    public static final String ITEM_CATEGORY_PADRAO = "services";
 
     private static final Pattern EMAIL_SIMPLES = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 

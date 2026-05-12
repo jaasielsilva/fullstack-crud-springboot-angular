@@ -2,15 +2,16 @@
   "basic_example": {
     "items": [
       {
+        "id": "EMPRESA_1_PLANO_1_ASSINATURA_9",
         "title": "Plano Básico - ERP Corporativo",
         "description": "Assinatura mensal do Plano Básico para Adegas e Distribuidoras",
         "quantity": 1,
         "currency_id": "BRL",
-        "unit_price": 59.9
+        "unit_price": 59.9,
+        "category_id": "services"
       }
     ],
     "payer": {
-      "name": "Nome do Cliente",
       "email": "cliente@email.com"
     },
     "external_reference": "EMPRESA_1_PLANO_1_ASSINATURA_9",
@@ -25,15 +26,16 @@
   "premium_example": {
     "items": [
       {
+        "id": "EMPRESA_1_PLANO_2_ASSINATURA_10",
         "title": "Plano Premium - ERP Corporativo",
         "description": "Assinatura mensal do Plano Premium para Adegas e Distribuidoras",
         "quantity": 1,
         "currency_id": "BRL",
-        "unit_price": 99.9
+        "unit_price": 99.9,
+        "category_id": "services"
       }
     ],
     "payer": {
-      "name": "Nome do Cliente",
       "email": "cliente@email.com"
     },
     "external_reference": "EMPRESA_1_PLANO_2_ASSINATURA_10",
@@ -42,6 +44,30 @@
       "success": "https://erpcorporativo.shop/pagamento/sucesso",
       "failure": "https://erpcorporativo.shop/pagamento/falha",
       "pending": "https://erpcorporativo.shop/pagamento/pendente"
+    },
+    "auto_return": "approved"
+  },
+  "pedido_minimo_exemplo": {
+    "items": [
+      {
+        "id": "PEDIDO_1_99",
+        "title": "Pagamento ERP",
+        "description": "Pagamento de serviço",
+        "quantity": 1,
+        "currency_id": "BRL",
+        "unit_price": 10.0,
+        "category_id": "services"
+      }
+    ],
+    "payer": {
+      "email": "comprador@email.com"
+    },
+    "external_reference": "PEDIDO_1_99",
+    "notification_url": "https://api.erpcorporativo.shop/api/webhooks/mercadopago",
+    "back_urls": {
+      "success": "https://erpcorporativo.shop/pedidos?mp=success",
+      "failure": "https://erpcorporativo.shop/pedidos?mp=failure",
+      "pending": "https://erpcorporativo.shop/pedidos?mp=pending"
     },
     "auto_return": "approved"
   },
