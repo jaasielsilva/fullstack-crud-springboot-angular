@@ -26,6 +26,9 @@ public class MercadoPagoApiService {
     @Value("${mercadopago.access-token:}")
     private String accessToken;
 
+    @Value("${mercadopago.log-preference-payload:false}")
+    private boolean logPreferencePayload;
+
     public MercadoPagoApiService(RestClient mercadoPagoRestClient, ObjectMapper objectMapper) {
         this.mercadoPagoRestClient = mercadoPagoRestClient;
         this.objectMapper = objectMapper;
@@ -43,6 +46,7 @@ public class MercadoPagoApiService {
         } catch (JsonProcessingException e) {
             throw new BusinessException("Falha ao serializar JSON da preferência Mercado Pago.");
         }
+        logarJsonPreferenciaSeNecessario(corpo, json);
         try {
             String responseBody = mercadoPagoRestClient.post()
                     .uri("/checkout/preferences")
@@ -83,6 +87,30 @@ public class MercadoPagoApiService {
     private void validarToken() {
         if (accessToken == null || accessToken.isBlank()) {
             throw new BusinessException("Integração Mercado Pago não configurada (mercadopago.access-token).");
+        }
+    }
+
+    /**
+     * Equivalente a inspecionar o body antes do POST. Preferir {@code mercadopago.log-preference-payload=true}
+     * ou {@code logging.level...MercadoPagoApiService=DEBUG} em vez de {@code System.out.println}.
+     */
+    private void logarJsonPreferenciaSeNecessario(JsonNode corpo, String jsonCompacto) {
+        if (!logPreferencePayload && !log.isDebugEnabled()) {
+            return;
+        }
+        try {
+            String pretty = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(corpo);
+            if (logPreferencePayload) {
+                log.info("Mercado Pago criarPreferencia | JSON enviado:\n{}", pretty);
+            } else {
+                log.debug("Mercado Pago criarPreferencia | JSON enviado:\n{}", pretty);
+            }
+        } catch (JsonProcessingException e) {
+            if (logPreferencePayload) {
+                log.info("Mercado Pago criarPreferencia | JSON enviado (compacto): {}", jsonCompacto);
+            } else {
+                log.debug("Mercado Pago criarPreferencia | JSON enviado (compacto): {}", jsonCompacto);
+            }
         }
     }
 

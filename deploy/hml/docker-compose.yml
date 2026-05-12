@@ -56,6 +56,7 @@ services:
       MERCADO_PAGO_PREFER_SANDBOX: ${MERCADO_PAGO_PREFER_SANDBOX:-true}
       # Opcional: ex. 1.00 — defina no .env (ver deploy/hml/.env.example). Sem a variável = preço real.
       MERCADO_PAGO_CHECKOUT_VALOR_OVERRIDE: ${MERCADO_PAGO_CHECKOUT_VALOR_OVERRIDE:-}
+      MERCADO_PAGO_LOG_PREFERENCE_PAYLOAD: ${MERCADO_PAGO_LOG_PREFERENCE_PAYLOAD:-false}
     networks:
       - internal-hml
     ports:
