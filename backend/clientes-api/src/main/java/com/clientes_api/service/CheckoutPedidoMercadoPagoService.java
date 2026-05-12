@@ -11,6 +11,7 @@ import com.clientes_api.model.Pedido;
 import com.clientes_api.model.StatusPedido;
 import com.clientes_api.repository.PedidoRepository;
 import com.clientes_api.util.PedidoMercadoPagoExternalReference;
+import com.clientes_api.util.MercadoPagoPreferenciaUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,6 +28,7 @@ public class CheckoutPedidoMercadoPagoService {
     private final PedidoRepository pedidoRepository;
     private final ObjectMapper objectMapper;
     private final MercadoPagoValorPreferenciaService mercadoPagoValorPreferenciaService;
+    private final EmpresaService empresaService;
 
     @Value("${mercadopago.notification-url}")
     private String notificationUrl;
@@ -40,11 +42,13 @@ public class CheckoutPedidoMercadoPagoService {
     public CheckoutPedidoMercadoPagoService(MercadoPagoApiService mercadoPagoApiService,
                                             PedidoRepository pedidoRepository,
                                             ObjectMapper objectMapper,
-                                            MercadoPagoValorPreferenciaService mercadoPagoValorPreferenciaService) {
+                                            MercadoPagoValorPreferenciaService mercadoPagoValorPreferenciaService,
+                                            EmpresaService empresaService) {
         this.mercadoPagoApiService = mercadoPagoApiService;
         this.pedidoRepository = pedidoRepository;
         this.objectMapper = objectMapper;
         this.mercadoPagoValorPreferenciaService = mercadoPagoValorPreferenciaService;
+        this.empresaService = empresaService;
     }
 
     @Transactional
@@ -60,7 +64,7 @@ public class CheckoutPedidoMercadoPagoService {
         }
 
         String externalReference = PedidoMercadoPagoExternalReference.format(tenantId, pedidoId);
-        ObjectNode body = montarPreferencia(pedido, externalReference);
+        ObjectNode body = montarPreferencia(pedido, externalReference, tenantId);
         var response = mercadoPagoApiService.criarPreferencia(body);
 
         String prefId = response.path("id").asText(null);
@@ -76,11 +80,15 @@ public class CheckoutPedidoMercadoPagoService {
         return new CheckoutResponseDTO(checkoutUrl, prefId);
     }
 
-    private ObjectNode montarPreferencia(Pedido pedido, String externalReference) {
+    private ObjectNode montarPreferencia(Pedido pedido, String externalReference, long tenantId) {
         ObjectNode root = objectMapper.createObjectNode();
+
+        var empresa = empresaService.buscarPorIdOuErro(tenantId);
 
         ArrayNode items = root.putArray("items");
         ObjectNode item = items.addObject();
+        item.put("id", externalReference);
+        item.put("category_id", MercadoPagoPreferenciaUtil.ITEM_CATEGORY_PADRAO);
         item.put("title", "Pedido #" + pedido.getId() + " — ERP");
         item.put("description", "Pagamento do pedido para " + pedido.getCliente().getNome());
         item.put("quantity", 1);
@@ -89,9 +97,20 @@ public class CheckoutPedidoMercadoPagoService {
         item.put("unit_price", mercadoPagoValorPreferenciaService.resolverPrecoUnitario(valorPedido));
 
         ObjectNode payer = root.putObject("payer");
-        payer.put("name", pedido.getCliente().getNome());
-        String email = pedido.getCliente().getEmail();
-        payer.put("email", email != null && !email.isBlank() ? email : "nao-informado@placeholder.local");
+        MercadoPagoPreferenciaUtil.preencherPayerNome(payer, pedido.getCliente().getNome());
+        String email = MercadoPagoPreferenciaUtil.primeiroEmailValido(
+                pedido.getCliente().getEmail(),
+                empresa.getEmail());
+        if (email == null) {
+            throw new BusinessException(
+                    "Cadastre um e-mail válido no cliente ou na empresa para gerar cobrança (exigência Mercado Pago).");
+        }
+        payer.put("email", email);
+        MercadoPagoPreferenciaUtil.preencherPayerIdentificacaoBrasil(payer, empresa.getDocumento());
+        String telCliente = pedido.getCliente().getTelefone();
+        MercadoPagoPreferenciaUtil.preencherPayerTelefoneBrasil(
+                payer,
+                telCliente != null && !telCliente.isBlank() ? telCliente : empresa.getTelefone());
 
         root.put("external_reference", externalReference);
         root.put("notification_url", notificationUrl);

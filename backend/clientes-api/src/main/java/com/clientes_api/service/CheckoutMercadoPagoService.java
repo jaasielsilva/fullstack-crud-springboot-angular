@@ -11,6 +11,7 @@ import com.clientes_api.model.enums.StatusAssinatura;
 import com.clientes_api.model.enums.StatusEmpresa;
 import com.clientes_api.model.enums.TipoPlano;
 import com.clientes_api.util.MercadoPagoExternalReference;
+import com.clientes_api.util.MercadoPagoPreferenciaUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -90,7 +91,7 @@ public class CheckoutMercadoPagoService {
         assinatura.setExternalReference(externalReference);
         assinatura = assinaturaService.salvar(assinatura);
 
-        ObjectNode body = montarPreferencia(plano, empresa, externalReference);
+        ObjectNode body = montarPreferencia(plano, empresa, externalReference, usuarioLogado);
         var response = mercadoPagoApiService.criarPreferencia(body);
 
         String prefId = response.path("id").asText(null);
@@ -106,11 +107,13 @@ public class CheckoutMercadoPagoService {
         return new CheckoutResponseDTO(checkoutUrl, prefId);
     }
 
-    private ObjectNode montarPreferencia(Plano plano, Tenant empresa, String externalReference) {
+    private ObjectNode montarPreferencia(Plano plano, Tenant empresa, String externalReference, Usuario usuarioLogado) {
         ObjectNode root = objectMapper.createObjectNode();
 
         ArrayNode items = root.putArray("items");
         ObjectNode item = items.addObject();
+        item.put("id", externalReference);
+        item.put("category_id", MercadoPagoPreferenciaUtil.ITEM_CATEGORY_PADRAO);
         item.put("title", plano.getNome() + " - ERP Corporativo");
         item.put("description",
                 plano.getDescricao() != null && !plano.getDescricao().isBlank()
@@ -121,10 +124,15 @@ public class CheckoutMercadoPagoService {
         item.put("unit_price", mercadoPagoValorPreferenciaService.resolverPrecoUnitario(plano.getValor()));
 
         ObjectNode payer = root.putObject("payer");
-        payer.put("name", empresa.getNome());
-        payer.put("email", empresa.getEmail() != null && !empresa.getEmail().isBlank()
-                ? empresa.getEmail()
-                : "nao-informado@placeholder.local");
+        MercadoPagoPreferenciaUtil.preencherPayerNome(payer, empresa.getNome());
+        String email = MercadoPagoPreferenciaUtil.primeiroEmailValido(empresa.getEmail(), usuarioLogado.getLogin());
+        if (email == null) {
+            throw new BusinessException(
+                    "Cadastre um e-mail válido na empresa ou use login com e-mail para o checkout (exigência Mercado Pago).");
+        }
+        payer.put("email", email);
+        MercadoPagoPreferenciaUtil.preencherPayerIdentificacaoBrasil(payer, empresa.getDocumento());
+        MercadoPagoPreferenciaUtil.preencherPayerTelefoneBrasil(payer, empresa.getTelefone());
 
         root.put("external_reference", externalReference);
         root.put("notification_url", notificationUrl);
