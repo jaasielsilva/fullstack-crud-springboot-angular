@@ -1,24 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { DashboardService, DashboardExecutivoResponse } from './dashboard.service';
 
-interface SparkPoint {
-  x: number;
-  y: number;
-  value: number;
-  label: string;
-}
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule], // Adicionamos aqui!
+  imports: [CommonModule, RouterModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   periodoSelecionado: '7d' | '30d' | 'mes' | 'hoje' = '30d';
 
   totalClientes = 0;
@@ -41,10 +37,13 @@ export class DashboardComponent implements OnInit {
   topVariacoes: Array<{ produto: string; atual: number; anterior: number; delta: number; tendencia: string }> = [];
   pedidosRecentes: Array<{ id: number; cliente: string; status: string; valorTotal: number; dataPedido: string }> = [];
   alertasExecutivos: string[] = [];
-  receitaSerie: number[] = [];
-  pedidosSerie: number[] = [];
-  receitaSpark: SparkPoint[] = [];
-  pedidosSpark: SparkPoint[] = [];
+  serieReceitaDespesa: Array<{ dia: string; receita: number; despesa: number }> = [];
+  vendasPorCategoria: Array<{ categoria: string; valor: number; percentual: number }> = [];
+
+  /** Snapshot ao carregar a API — evita NG0100 (Date.now() mudando entre verificações de CD). */
+  atividadesRecentes: Array<{ icone: string; texto: string; tempo: string }> = [];
+  intervaloLegenda = '';
+
   diasSemVenda = 0;
   metaReceita = 50000;
 
@@ -53,10 +52,17 @@ export class DashboardComponent implements OnInit {
   metaEscopo = '';
   metaAlvo = '';
 
+  private chartLinha?: Chart;
+  private chartDonut?: Chart;
+
   constructor(private dashboardService: DashboardService) {}
 
   ngOnInit(): void {
     this.carregarDashboardExecutivo();
+  }
+
+  ngOnDestroy(): void {
+    this.destroyCharts();
   }
 
   selecionarPeriodo(periodo: '7d' | '30d' | 'mes' | 'hoje'): void {
@@ -65,6 +71,7 @@ export class DashboardComponent implements OnInit {
   }
 
   carregarDashboardExecutivo(): void {
+    this.destroyCharts();
     this.carregando = true;
     this.erroCarregamento = '';
     this.dashboardService.resumoExecutivo(this.periodoSelecionado).subscribe({
@@ -90,9 +97,14 @@ export class DashboardComponent implements OnInit {
         this.topVariacoes = data.topVariacoes ?? [];
         this.pedidosRecentes = data.pedidosRecentes ?? [];
         this.alertasExecutivos = data.alertasExecutivos ?? [];
+        this.serieReceitaDespesa = data.serieReceitaDespesa ?? [];
+        this.vendasPorCategoria = data.vendasPorCategoria ?? [];
 
-        this.montarSeriesPeriodo(this.pedidosRecentes);
+        this.intervaloLegenda = this.calcularLegendaIntervaloDatas();
+        this.atividadesRecentes = this.montarAtividadesSnapshot();
+
         this.carregando = false;
+        setTimeout(() => this.renderCharts(), 0);
       },
       error: (_err: HttpErrorResponse) => {
         this.erroCarregamento = 'Não foi possível carregar o dashboard executivo.';
@@ -101,39 +113,38 @@ export class DashboardComponent implements OnInit {
     });
 
     this.dashboardService.buscarMeta().subscribe({
-      next: (meta) => {
+      next: meta => {
         this.metaEscopo = meta.escopo;
         this.metaAlvo = meta.alvo;
       }
     });
   }
 
-  sparklinePoints(serie: number[], width = 120, height = 34): string {
-    if (!serie.length) return `0,${height} ${width},${height}`;
-    const max = Math.max(...serie, 1);
-    const min = Math.min(...serie, 0);
-    const range = Math.max(max - min, 1);
-    const step = serie.length > 1 ? width / (serie.length - 1) : width;
-
-    return serie
-      .map((valor, i) => {
-        const x = i * step;
-        const y = height - ((valor - min) / range) * height;
-        return `${x.toFixed(2)},${y.toFixed(2)}`;
-      })
-      .join(' ');
-  }
-
-  progressoMetaReceita(): number {
-    if (this.metaReceita <= 0) return 0;
-    return Math.min(100, (this.faturamentoTotal / this.metaReceita) * 100);
+  /** Preferir binding `intervaloLegenda` (atualizado no load); evita `new Date()` a cada CD. */
+  calcularLegendaIntervaloDatas(): string {
+    const fim = new Date();
+    let inicio = new Date();
+    if (this.periodoSelecionado === 'hoje') {
+      inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate());
+    } else if (this.periodoSelecionado === '7d') {
+      inicio.setDate(fim.getDate() - 6);
+    } else if (this.periodoSelecionado === 'mes') {
+      inicio = new Date(fim.getFullYear(), fim.getMonth(), 1);
+    } else {
+      inicio.setDate(fim.getDate() - 29);
+    }
+    const fmt = (d: Date) =>
+      d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return `${fmt(inicio)} — ${fmt(fim)}`;
   }
 
   variacaoPercentual(atual: number, anterior: number): number {
-    if (anterior <= 0) {
-      return atual > 0 ? 100 : 0;
+    const cur = Number(atual ?? 0);
+    const prev = Number(anterior ?? 0);
+    if (prev <= 0) {
+      return cur > 0 ? 100 : 0;
     }
-    return ((atual - anterior) / anterior) * 100;
+    return ((cur - prev) / prev) * 100;
   }
 
   variacaoClasse(valor: number): 'trend-up' | 'trend-down' | 'trend-neutral' {
@@ -154,10 +165,67 @@ export class DashboardComponent implements OnInit {
     if (this.periodoSelecionado === 'mes') return 'mês atual';
     return 'últimos 30 dias';
   }
+
+  trackAtividade(_index: number, item: { texto: string }): string {
+    return item.texto;
+  }
+
   semaforoClasse(valor: 'VERDE' | 'AMARELO' | 'VERMELHO'): string {
     if (valor === 'VERDE') return 'semaforo-verde';
     if (valor === 'AMARELO') return 'semaforo-amarelo';
     return 'semaforo-vermelho';
+  }
+
+  labelStatus(status: string): string {
+    const s = (status || '').toUpperCase();
+    if (s === 'ENTREGUE') return 'Concluído';
+    if (s === 'PAGO') return 'Processando';
+    if (s === 'ABERTO') return 'Pendente';
+    if (s === 'CANCELADO') return 'Cancelado';
+    return status || '—';
+  }
+
+  badgeStatusClasse(status: string): string {
+    const s = (status || '').toUpperCase();
+    if (s === 'ENTREGUE') return 'badge-status-concluido';
+    if (s === 'PAGO') return 'badge-status-processando';
+    if (s === 'ABERTO') return 'badge-status-pendente';
+    if (s === 'CANCELADO') return 'badge-status-cancelado';
+    return 'badge-status-neutro';
+  }
+
+  tempoRelativo(dataIso: string): string {
+    if (!dataIso) return '';
+    const d = new Date(dataIso);
+    if (Number.isNaN(d.getTime())) return '';
+    const diffMs = Date.now() - d.getTime();
+    const min = Math.floor(diffMs / 60000);
+    if (min < 1) return 'agora';
+    if (min < 60) return `há ${min} min`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `há ${h} h`;
+    const days = Math.floor(h / 24);
+    return `há ${days} dia(s)`;
+  }
+
+  private montarAtividadesSnapshot(): Array<{ icone: string; texto: string; tempo: string }> {
+    const itens: Array<{ icone: string; texto: string; tempo: string }> = [];
+    const recentes = [...this.pedidosRecentes].slice(0, 5);
+    for (const p of recentes) {
+      itens.push({
+        icone: 'bi-bag-check',
+        texto: `Pedido #${p.id} — ${this.labelStatus(p.status)}`,
+        tempo: this.tempoRelativo(p.dataPedido)
+      });
+    }
+    if (this.topClientes[0]) {
+      itens.push({
+        icone: 'bi-person-plus',
+        texto: `Destaque em vendas — ${this.topClientes[0].nome}`,
+        tempo: this.labelPeriodo()
+      });
+    }
+    return itens.slice(0, 6);
   }
 
   exportarResumoPdf(): void {
@@ -199,36 +267,114 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  private montarSeriesPeriodo(pedidosRecentes: Array<{ dataPedido: string; valorTotal: number }>): void {
-    const ordenados = [...pedidosRecentes]
-      .filter(p => !!p.dataPedido)
-      .sort((a, b) => new Date(a.dataPedido).getTime() - new Date(b.dataPedido).getTime());
-
-    const receita = ordenados.map(p => p.valorTotal || 0);
-    const quantidade = ordenados.map(() => 1);
-    const labels = ordenados.map(p => new Date(p.dataPedido).toLocaleDateString('pt-BR'));
-
-    this.receitaSerie = receita.length ? receita : [0];
-    this.pedidosSerie = quantidade.length ? quantidade : [0];
-    this.receitaSpark = this.montarSparkData(this.receitaSerie, labels.length ? labels : ['']);
-    this.pedidosSpark = this.montarSparkData(this.pedidosSerie, labels.length ? labels : ['']);
+  private destroyCharts(): void {
+    this.chartLinha?.destroy();
+    this.chartLinha = undefined;
+    this.chartDonut?.destroy();
+    this.chartDonut = undefined;
   }
 
-  private montarSparkData(serie: number[], labels: string[], width = 120, height = 34): SparkPoint[] {
-    if (!serie.length) {
-      return [{ x: 0, y: height, value: 0, label: labels[0] ?? '' }];
-    }
-    const max = Math.max(...serie, 1);
-    const min = Math.min(...serie, 0);
-    const range = Math.max(max - min, 1);
-    const step = serie.length > 1 ? width / (serie.length - 1) : width;
+  private renderCharts(): void {
+    const elLinha = document.getElementById('chartReceitaDespesa') as HTMLCanvasElement | null;
+    const elDonut = document.getElementById('chartCategorias') as HTMLCanvasElement | null;
+    if (!elLinha || !elDonut) return;
 
-    return serie.map((value, index) => ({
-      x: index * step,
-      y: height - ((value - min) / range) * height,
-      value,
-      label: labels[index] ?? ''
-    }));
+    const labels = this.serieReceitaDespesa.map(p => p.dia);
+    const receitas = this.serieReceitaDespesa.map(p => p.receita ?? 0);
+    const despesas = this.serieReceitaDespesa.map(p => p.despesa ?? 0);
+
+    const cfgLinha: ChartConfiguration<'line'> = {
+      type: 'line',
+      data: {
+        labels: labels.length ? labels : ['—'],
+        datasets: [
+          {
+            label: 'Receita',
+            data: receitas.length ? receitas : [0],
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2
+          },
+          {
+            label: 'Despesa (estimada)',
+            data: despesas.length ? despesas : [0],
+            borderColor: '#dc2626',
+            backgroundColor: 'rgba(220, 38, 38, 0.06)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const v = ctx.parsed.y as number;
+                return `${ctx.dataset.label}: ${v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            ticks: {
+              callback: value =>
+                Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+            }
+          }
+        }
+      }
+    };
+    this.chartLinha = new Chart(elLinha, cfgLinha);
+
+    const cats = this.vendasPorCategoria;
+    const donutLabels = cats.length ? cats.map(c => c.categoria) : ['Sem dados'];
+    const donutData = cats.length ? cats.map(c => c.valor) : [1];
+    const colors = ['#2563eb', '#38bdf8', '#fbbf24', '#f87171', '#94a3b8'];
+
+    const cfgDonut: ChartConfiguration<'doughnut'> = {
+      type: 'doughnut',
+      data: {
+        labels: donutLabels,
+        datasets: [
+          {
+            data: donutData,
+            backgroundColor: donutLabels.map((_, i) => colors[i % colors.length]),
+            borderWidth: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 12 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const raw = ctx.raw as number;
+                const pct = cats[ctx.dataIndex]?.percentual;
+                const p = pct != null ? ` (${pct}%)` : '';
+                return `${ctx.label}: ${raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}${p}`;
+              }
+            }
+          }
+        }
+      }
+    };
+    this.chartDonut = new Chart(elDonut, cfgDonut as never);
   }
-
 }

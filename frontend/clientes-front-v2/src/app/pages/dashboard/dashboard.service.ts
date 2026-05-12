@@ -3,6 +3,18 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+export interface SerieDia {
+  dia: string;
+  receita: number;
+  despesa: number;
+}
+
+export interface CategoriaVenda {
+  categoria: string;
+  valor: number;
+  percentual: number;
+}
+
 export interface DashboardExecutivoResponse {
   periodo: string;
   metaReceita: number;
@@ -26,6 +38,8 @@ export interface DashboardExecutivoResponse {
   topProdutos: Array<{ nome: string; quantidade: number }>;
   topVariacoes: Array<{ produto: string; atual: number; anterior: number; delta: number; tendencia: string }>;
   pedidosRecentes: Array<{ id: number; cliente: string; status: string; valorTotal: number; dataPedido: string }>;
+  serieReceitaDespesa?: SerieDia[];
+  vendasPorCategoria?: CategoriaVenda[];
 }
 
 export interface DashboardMetaConfigResponse {
