@@ -10,7 +10,7 @@ public class AbacatePayRestConfig {
     @Bean
     public RestClient abacatePayRestClient() {
         return RestClient.builder()
-                .baseUrl("https://api.abacatepay.com")
+                .baseUrl("https://api.abacatepay.com/v2")
                 .build();
     }
 }

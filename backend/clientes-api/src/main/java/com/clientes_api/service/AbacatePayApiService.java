@@ -15,9 +15,11 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 /**
- * Cliente HTTP para a API AbacatePay ({@code https://api.abacatepay.com/v1}).
+ * Cliente HTTP para a API AbacatePay <strong>v2</strong> ({@code https://api.abacatepay.com/v2}).
+ * Chaves novas do dashboard exigem v2; v1 retorna 401 "API key version mismatch".
  *
- * @see <a href="https://docs.abacatepay.com/api-reference/criar-uma-nova-cobran%C3%A7a">Criar cobrança</a>
+ * @see <a href="https://docs.abacatepay.com/pages/payment/create">Criar checkout</a>
+ * @see <a href="https://docs.abacatepay.com/pages/products/create">Criar produto</a>
  */
 @Service
 public class AbacatePayApiService {
@@ -39,9 +41,20 @@ public class AbacatePayApiService {
     }
 
     /**
-     * POST {@code /v1/billing/create} — retorna o JSON completo (usa {@code data.url} e {@code data.id}).
+     * POST {@code /products/create} — corpo e resposta conforme OpenAPI v2.
      */
-    public JsonNode criarCobranca(ObjectNode payload) {
+    public JsonNode criarProduto(ObjectNode payload) {
+        return postJson("/products/create", payload, "produto");
+    }
+
+    /**
+     * POST {@code /checkouts/create} — corpo e resposta conforme OpenAPI v2 ({@code data.url}, {@code data.id}).
+     */
+    public JsonNode criarCheckout(ObjectNode payload) {
+        return postJson("/checkouts/create", payload, "checkout");
+    }
+
+    private JsonNode postJson(String path, ObjectNode payload, String recurso) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new BusinessException(
                     "Abacate Pay não configurado: defina abacatepay.api-key (variável ABACATEPAY_API_KEY).");
@@ -50,11 +63,11 @@ public class AbacatePayApiService {
         try {
             json = objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException e) {
-            throw new BusinessException("Falha ao serializar JSON da cobrança Abacate Pay.");
+            throw new BusinessException("Falha ao serializar JSON da requisição Abacate Pay (" + recurso + ").");
         }
         try {
             String responseBody = abacatePayRestClient.post()
-                    .uri("/v1/billing/create")
+                    .uri(path)
                     .header("Authorization", "Bearer " + apiKey.trim())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(json)
@@ -67,13 +80,18 @@ public class AbacatePayApiService {
             }
             return root;
         } catch (JsonProcessingException e) {
-            throw new BusinessException("Resposta inválida da Abacate Pay ao criar cobrança.");
+            throw new BusinessException("Resposta inválida da Abacate Pay (" + recurso + ").");
         } catch (RestClientResponseException e) {
-            String body = safeBody(e);
-            log.warn("Abacate Pay billing/create falhou: http={} body={}", e.getStatusCode().value(), trunc(body));
-            throw new BusinessException("Erro ao criar cobrança na Abacate Pay: HTTP "
+            String errBody = safeBody(e);
+            log.warn("Abacate Pay {} falhou: http={} body={}", path, e.getStatusCode().value(), trunc(errBody));
+            String hint = "";
+            if (e.getStatusCode().value() == 401) {
+                hint = " Verifique se a chave é da API v2 e se tem permissões (ex.: PRODUCT:CREATE, CHECKOUT:CREATE).";
+            }
+            throw new BusinessException("Erro ao chamar Abacate Pay (" + recurso + "): HTTP "
                     + e.getStatusCode().value()
-                    + bodyParaMensagem(body));
+                    + bodyParaMensagem(errBody)
+                    + hint);
         }
     }
 

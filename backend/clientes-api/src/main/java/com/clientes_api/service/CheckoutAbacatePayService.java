@@ -23,8 +23,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Checkout de assinatura via Abacate Pay (billing), em paralelo ao fluxo Mercado Pago.
- * Webhook de confirmação Abacate Pay pode ser adicionado depois; hoje apenas cria cobrança e URL.
+ * Checkout de assinatura via Abacate Pay API <strong>v2</strong> (produto avulso + checkout hospedado).
+ * Webhook de confirmação pode ser adicionado depois; hoje apenas cria checkout e URL.
  */
 @Service
 public class CheckoutAbacatePayService {
@@ -89,9 +89,18 @@ public class CheckoutAbacatePayService {
         assinatura.setExternalReference(externalReference);
         assinatura = assinaturaService.salvar(assinatura);
 
-        ObjectNode body = montarCobranca(plano, empresa, externalReference, assinatura.getId());
-        JsonNode root = abacatePayApiService.criarCobranca(body);
-        JsonNode data = root.path("data");
+        long precoCentavos = resolverPrecoCentavos(plano);
+
+        ObjectNode produtoBody = montarProdutoPlano(plano, externalReference, precoCentavos);
+        JsonNode produtoRoot = abacatePayApiService.criarProduto(produtoBody);
+        String productId = produtoRoot.path("data").path("id").asText(null);
+        if (productId == null || productId.isBlank()) {
+            throw new BusinessException("Abacate Pay não retornou o id público do produto (data.id).");
+        }
+
+        ObjectNode checkoutBody = montarCheckout(productId, externalReference, empresa, plano, assinatura.getId());
+        JsonNode checkoutRoot = abacatePayApiService.criarCheckout(checkoutBody);
+        JsonNode data = checkoutRoot.path("data");
         String url = data.path("url").asText(null);
         String billingId = data.path("id").asText(null);
         if (url == null || url.isBlank()) {
@@ -104,31 +113,46 @@ public class CheckoutAbacatePayService {
         return new CheckoutResponseDTO(url, billingId != null ? billingId : "");
     }
 
-    private ObjectNode montarCobranca(Plano plano, Tenant empresa, String externalReference, long assinaturaId) {
+    private long resolverPrecoCentavos(Plano plano) {
         BigDecimal precoReais = mercadoPagoValorPreferenciaService.resolverPrecoUnitario(plano.getValor());
         long precoCentavos = precoReais.multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP).longValue();
         if (precoCentavos < 100) {
             precoCentavos = 100;
         }
+        return precoCentavos;
+    }
 
+    private ObjectNode montarProdutoPlano(Plano plano, String externalReference, long precoCentavos) {
         ObjectNode root = objectMapper.createObjectNode();
-        root.put("frequency", "ONE_TIME");
-        ArrayNode methods = root.putArray("methods");
-        methods.add("PIX");
-        methods.add("CARD");
-
-        ArrayNode products = root.putArray("products");
-        ObjectNode product = products.addObject();
-        product.put("externalId", "plano-" + plano.getId() + "-emp-" + empresa.getId());
-        product.put("name", plano.getNome() + " — ERP Corporativo");
-        product.put(
+        root.put("externalId", externalReference);
+        root.put("name", plano.getNome() + " — ERP Corporativo");
+        root.put(
                 "description",
                 plano.getDescricao() != null && !plano.getDescricao().isBlank()
                         ? plano.getDescricao()
                         : "Assinatura mensal"
         );
-        product.put("quantity", 1);
-        product.put("price", precoCentavos);
+        root.put("price", precoCentavos);
+        root.put("currency", "BRL");
+        return root;
+    }
+
+    private ObjectNode montarCheckout(
+            String productIdAbacate,
+            String externalReference,
+            Tenant empresa,
+            Plano plano,
+            long assinaturaId
+    ) {
+        ObjectNode root = objectMapper.createObjectNode();
+        ArrayNode items = root.putArray("items");
+        ObjectNode item = items.addObject();
+        item.put("id", productIdAbacate);
+        item.put("quantity", 1);
+
+        ArrayNode methods = root.putArray("methods");
+        methods.add("PIX");
+        methods.add("CARD");
 
         root.put("returnUrl", frontendUrl + "/planos");
         root.put("completionUrl", frontendUrl + "/pagamento/sucesso");
