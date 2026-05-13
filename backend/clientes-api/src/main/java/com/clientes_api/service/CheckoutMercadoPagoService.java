@@ -139,7 +139,10 @@ public class CheckoutMercadoPagoService {
         backUrls.put("failure", frontendUrl + "/pagamento/falha");
         backUrls.put("pending", frontendUrl + "/pagamento/pendente");
 
-        root.put("auto_return", "approved");
+        // auto_return só funciona com URLs públicas (não localhost)
+        if (!frontendUrl.contains("localhost") && !frontendUrl.contains("127.0.0.1")) {
+            root.put("auto_return", "approved");
+        }
         return root;
     }
 
