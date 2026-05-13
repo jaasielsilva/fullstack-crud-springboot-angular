@@ -40,7 +40,7 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ClienteRepository clienteRepository;
     private final ProdutoRepository produtoRepository;
-    private final CheckoutPedidoMercadoPagoService checkoutPedidoMercadoPagoService;
+    private final CheckoutPedidoAbacatePayService checkoutPedidoAbacatePayService;
     private final PagamentoService pagamentoService;
 
     @Value("${app.pedido-simular-pagamento:false}")
@@ -114,7 +114,7 @@ public class PedidoService {
     }
 
     public CheckoutResponseDTO iniciarCheckoutPedido(Long id) {
-        return checkoutPedidoMercadoPagoService.criarCheckoutPedido(id, requireTenantId());
+        return checkoutPedidoAbacatePayService.criarCheckoutPedido(id, requireTenantId());
     }
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
@@ -169,15 +169,16 @@ public class PedidoService {
     }
 
     /**
-     * Chamado pelo webhook do Mercado Pago após {@link TenantContext} já estar setado para o tenant do pedido.
+     * Chamado pelo webhook do Mercado Pago após {@link TenantContext} já estar
+     * setado para o tenant do pedido.
      */
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public void processarWebhookMercadoPagoPedido(long pedidoId,
-                                                  String mercadoPagoPaymentId,
-                                                  JsonNode payment,
-                                                  String rawPayment,
-                                                  String externalRef,
-                                                  StatusPagamento statusPagamento) {
+            String mercadoPagoPaymentId,
+            JsonNode payment,
+            String rawPayment,
+            String externalRef,
+            StatusPagamento statusPagamento) {
         long tenantId = requireTenantId();
 
         Pedido pedido = pedidoRepository.findByIdAndTenantId(pedidoId, tenantId)
@@ -211,8 +212,10 @@ public class PedidoService {
     }
 
     /**
-     * Com {@code orphanRemoval = true}, não substituir a coleção {@code pedido.itens} por uma nova lista:
-     * mutar a instância existente (clear + add) para o Hibernate remover órfãos corretamente.
+     * Com {@code orphanRemoval = true}, não substituir a coleção
+     * {@code pedido.itens} por uma nova lista:
+     * mutar a instância existente (clear + add) para o Hibernate remover órfãos
+     * corretamente.
      */
     private void preencherDadosPedido(Pedido pedido, PedidoRequestDTO request) {
         if (request.getItens() == null || request.getItens().isEmpty()) {
@@ -248,7 +251,8 @@ public class PedidoService {
             int quantidadeSolicitada = itemRequest.getQuantidade();
             if (quantidadeSolicitada > estoqueAtual) {
                 throw new BusinessException(
-                        "Estoque insuficiente para o produto \"" + produto.getNome() + "\" (disponível: " + estoqueAtual + ").");
+                        "Estoque insuficiente para o produto \"" + produto.getNome() + "\" (disponível: " + estoqueAtual
+                                + ").");
             }
 
             produto.setQuantidade(estoqueAtual - quantidadeSolicitada);
@@ -299,17 +303,17 @@ public class PedidoService {
         List<ItemPedidoResponseDTO> itensResponse = pedido.getItens() == null
                 ? List.of()
                 : pedido.getItens()
-                .stream()
-                .map(item -> {
-                    ItemPedidoResponseDTO itemResponse = new ItemPedidoResponseDTO();
-                    itemResponse.setProdutoId(item.getProduto().getId());
-                    itemResponse.setProduto(item.getProduto().getNome());
-                    itemResponse.setQuantidade(item.getQuantidade());
-                    itemResponse.setValorUnitario(item.getValorUnitario());
-                    itemResponse.setSubtotal(item.getSubtotal());
-                    return itemResponse;
-                })
-                .toList();
+                        .stream()
+                        .map(item -> {
+                            ItemPedidoResponseDTO itemResponse = new ItemPedidoResponseDTO();
+                            itemResponse.setProdutoId(item.getProduto().getId());
+                            itemResponse.setProduto(item.getProduto().getNome());
+                            itemResponse.setQuantidade(item.getQuantidade());
+                            itemResponse.setValorUnitario(item.getValorUnitario());
+                            itemResponse.setSubtotal(item.getSubtotal());
+                            return itemResponse;
+                        })
+                        .toList();
 
         response.setItens(itensResponse);
 

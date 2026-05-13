@@ -57,13 +57,13 @@ export class PedidosComponent implements OnInit {
     private clienteService: ClienteService,
     private produtoService: ProdutoService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const qs = typeof window !== 'undefined' ? window.location.search : '';
-    if (qs.includes('mp=success')) {
+    if (qs.includes('ap=success') || qs.includes('mp=success')) {
       this.alerta(
-        'Se o pagamento foi aprovado no Mercado Pago, o status do pedido será atualizado em instantes (webhook).',
+        'Se o pagamento foi aprovado, o status do pedido será atualizado em instantes.',
         'success'
       );
     }
@@ -132,7 +132,7 @@ export class PedidosComponent implements OnInit {
     if (!pedido.id) return;
     this.abrirModalConfirmacao({
       title: 'Ir para pagamento',
-      message: 'Você será redirecionado ao Mercado Pago para pagar este pedido com segurança.',
+      message: 'Você será redirecionado ao Abacate Pay para pagar este pedido com segurança.',
       type: 'info',
       confirmText: 'Continuar',
       onConfirm: () => this.executarCheckoutPedido(pedido)
@@ -321,10 +321,10 @@ export class PedidosComponent implements OnInit {
           this.itensLinhas =
             itens.length > 0
               ? itens.map((it, idx) => ({
-                  id: this.novoIdLinha(`ed-${idx}`),
-                  produtoId: it.produtoId ?? null,
-                  quantidade: Math.max(1, it.quantidade ?? 1)
-                }))
+                id: this.novoIdLinha(`ed-${idx}`),
+                produtoId: it.produtoId ?? null,
+                quantidade: Math.max(1, it.quantidade ?? 1)
+              }))
               : [this.linhaVazia()];
         },
         error: (_err: HttpErrorResponse) => {
