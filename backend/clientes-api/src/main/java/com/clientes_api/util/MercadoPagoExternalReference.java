@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 public record MercadoPagoExternalReference(long empresaId, long planoId, long assinaturaId) {
 
     private static final Pattern PATTERN = Pattern.compile(
-            "^EMPRESA_(\\d+)_PLANO_(\\d+)_ASSINATURA_(\\d+)$"
+            "^EMPRESA_(\\d+)_PLANO_(\\d+)_ASSINATURA_(\\d+)(?:_.*)?$"
     );
 
     public static Optional<MercadoPagoExternalReference> parse(String raw) {
