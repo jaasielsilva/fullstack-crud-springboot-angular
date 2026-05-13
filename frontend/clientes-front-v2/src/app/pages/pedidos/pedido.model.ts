@@ -11,8 +11,10 @@ export interface Pedido {
 }
 
 export interface CheckoutPedidoResponse {
-  checkoutUrl: string;
-  preferenceId: string;
+  checkoutUrl?: string;
+  preferenceId?: string;
+  /** Alias do Mercado Pago; mesmo valor que checkoutUrl quando o backend envia os dois. */
+  init_point?: string;
 }
 
 export interface ItemPedidoResponse {

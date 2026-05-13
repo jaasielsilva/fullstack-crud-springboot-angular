@@ -46,14 +46,22 @@ export class PlanosComponent implements OnInit {
     this.contratandoId = planoId;
 
     this.http
-      .post<{ checkoutUrl: string; preferenceId: string }>(`${environment.apiUrl}/api/public/checkout`, {
+      .post<{
+        checkoutUrl?: string;
+        preferenceId?: string;
+        init_point?: string;
+      }>(`${environment.apiUrl}/api/public/checkout`, {
         empresaId,
         planoId
       })
       .subscribe({
         next: (res) => {
-          if (res.checkoutUrl) {
-            window.location.href = res.checkoutUrl;
+          const initPoint = res.checkoutUrl ?? res.init_point;
+          if (!environment.production) {
+            console.log('init_point (checkoutUrl)', initPoint);
+          }
+          if (initPoint) {
+            window.location.href = initPoint;
           } else {
             this.checkoutErro = 'URL de checkout não retornada pelo servidor.';
             this.contratandoId = null;

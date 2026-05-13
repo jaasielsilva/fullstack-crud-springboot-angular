@@ -29,6 +29,9 @@ public class MercadoPagoApiService {
     @Value("${mercadopago.log-preference-payload:false}")
     private boolean logPreferencePayload;
 
+    @Value("${mercadopago.log-preference-response:false}")
+    private boolean logPreferenceResponse;
+
     public MercadoPagoApiService(RestClient mercadoPagoRestClient, ObjectMapper objectMapper) {
         this.mercadoPagoRestClient = mercadoPagoRestClient;
         this.objectMapper = objectMapper;
@@ -55,7 +58,9 @@ public class MercadoPagoApiService {
                     .body(json)
                     .retrieve()
                     .body(String.class);
-            return objectMapper.readTree(responseBody);
+            JsonNode responseTree = objectMapper.readTree(responseBody);
+            logarRespostaPreferenciaSeNecessario(responseTree);
+            return responseTree;
         } catch (JsonProcessingException e) {
             throw new BusinessException("Resposta inválida do Mercado Pago ao criar preferência.");
         } catch (RestClientResponseException e) {
@@ -94,6 +99,30 @@ public class MercadoPagoApiService {
      * Equivalente a inspecionar o body antes do POST. Preferir {@code mercadopago.log-preference-payload=true}
      * ou {@code logging.level...MercadoPagoApiService=DEBUG} em vez de {@code System.out.println}.
      */
+    private void logarRespostaPreferenciaSeNecessario(JsonNode response) {
+        if (!logPreferenceResponse && !log.isDebugEnabled()) {
+            return;
+        }
+        String id = response.path("id").asText("");
+        String initPoint = response.path("init_point").asText(null);
+        String sandboxInit = response.path("sandbox_init_point").asText(null);
+        if (logPreferenceResponse) {
+            log.info(
+                    "Mercado Pago criarPreferencia | resposta: id={} init_point={} sandbox_init_point={}",
+                    id,
+                    initPoint != null ? initPoint : "null",
+                    sandboxInit != null ? sandboxInit : "null"
+            );
+        } else {
+            log.debug(
+                    "Mercado Pago criarPreferencia | resposta: id={} init_point_presente={} sandbox_init_point_presente={}",
+                    id,
+                    initPoint != null && !initPoint.isBlank(),
+                    sandboxInit != null && !sandboxInit.isBlank()
+            );
+        }
+    }
+
     private void logarJsonPreferenciaSeNecessario(JsonNode corpo, String jsonCompacto) {
         if (!logPreferencePayload && !log.isDebugEnabled()) {
             return;

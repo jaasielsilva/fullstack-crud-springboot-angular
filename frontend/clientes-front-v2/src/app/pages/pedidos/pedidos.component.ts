@@ -145,8 +145,12 @@ export class PedidosComponent implements OnInit {
     this.service.checkoutPedido(pedido.id).subscribe({
       next: (res) => {
         this.carregando = false;
-        if (res.checkoutUrl) {
-          window.location.href = res.checkoutUrl;
+        const initPoint = res.checkoutUrl ?? res.init_point;
+        if (!environment.production) {
+          console.log('init_point (checkoutUrl)', initPoint);
+        }
+        if (initPoint) {
+          window.location.href = initPoint;
         } else {
           this.alerta('Resposta sem URL de checkout.', 'danger');
         }
