@@ -74,9 +74,37 @@ public class SubscriptionSnapshotService {
             }
 
             boolean pagamentoPendente = assinaturaStatus == StatusAssinatura.PENDENTE;
-            String mensagemPendente = pagamentoPendente
-                    ? "Seu pagamento está em análise no Mercado Pago. Aguarde a confirmação por webhook."
-                    : null;
+            String mensagemPendente = null;
+            if (pagamentoPendente) {
+                Assinatura pend = opAss.orElse(null);
+                if (pend != null && pend.getAbacatePayBillingId() != null && !pend.getAbacatePayBillingId().isBlank()) {
+                    mensagemPendente = "Aguarde a confirmação do pagamento (Abacate Pay).";
+                } else if (pend != null && pend.getMercadoPagoPreferenceId() != null
+                        && !pend.getMercadoPagoPreferenceId().isBlank()) {
+                    mensagemPendente = "Aguarde a confirmação do pagamento (Mercado Pago).";
+                } else {
+                    mensagemPendente = "Aguarde a confirmação do pagamento.";
+                }
+            }
+
+            Long diasAteVencimento = null;
+            String mensagemRenovacao = null;
+            if (opAss.isPresent() && assinaturaStatus == StatusAssinatura.ATIVA) {
+                Assinatura ativa = opAss.get();
+                if (ativa.getDataFim() != null) {
+                    long d = ChronoUnit.DAYS.between(LocalDate.now(), ativa.getDataFim().toLocalDate());
+                    if (d >= 0 && d <= 7) {
+                        diasAteVencimento = d;
+                        if (d == 0) {
+                            mensagemRenovacao = "Sua assinatura renova hoje.";
+                        } else if (d == 1) {
+                            mensagemRenovacao = "Falta 1 dia para a renovação da sua assinatura.";
+                        } else {
+                            mensagemRenovacao = "Faltam " + d + " dias para a renovação da sua assinatura.";
+                        }
+                    }
+                }
+            }
 
             List<String> recursos = resolverRecursos(empresa, opAss.orElse(null));
 
@@ -88,6 +116,8 @@ public class SubscriptionSnapshotService {
                     diasTrial,
                     pagamentoPendente,
                     mensagemPendente,
+                    diasAteVencimento,
+                    mensagemRenovacao,
                     recursos
             );
             log.info(

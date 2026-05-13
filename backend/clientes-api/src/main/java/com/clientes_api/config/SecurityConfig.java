@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/public/checkout/abacate").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/public/cadastro-trial").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/mercadopago").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/abacatepay").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .anyRequest().authenticated()

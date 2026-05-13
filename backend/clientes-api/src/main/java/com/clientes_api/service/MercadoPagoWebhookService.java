@@ -4,8 +4,6 @@ import com.clientes_api.config.TenantContext;
 import com.clientes_api.model.Assinatura;
 import com.clientes_api.model.Pagamento;
 import com.clientes_api.model.Tenant;
-import com.clientes_api.model.enums.StatusAssinatura;
-import com.clientes_api.model.enums.StatusEmpresa;
 import com.clientes_api.model.enums.StatusPagamento;
 import com.clientes_api.util.MercadoPagoExternalReference;
 import com.clientes_api.util.PedidoMercadoPagoExternalReference;
@@ -32,17 +30,20 @@ public class MercadoPagoWebhookService {
     private final AssinaturaService assinaturaService;
     private final EmpresaService empresaService;
     private final PedidoService pedidoService;
+    private final AssinaturaAtivacaoService assinaturaAtivacaoService;
 
     public MercadoPagoWebhookService(MercadoPagoApiService mercadoPagoApiService,
                                      PagamentoService pagamentoService,
                                      AssinaturaService assinaturaService,
                                      EmpresaService empresaService,
-                                     PedidoService pedidoService) {
+                                     PedidoService pedidoService,
+                                     AssinaturaAtivacaoService assinaturaAtivacaoService) {
         this.mercadoPagoApiService = mercadoPagoApiService;
         this.pagamentoService = pagamentoService;
         this.assinaturaService = assinaturaService;
         this.empresaService = empresaService;
         this.pedidoService = pedidoService;
+        this.assinaturaAtivacaoService = assinaturaAtivacaoService;
     }
 
     @Transactional
@@ -114,7 +115,8 @@ public class MercadoPagoWebhookService {
             pagamentoService.salvar(pagamento);
 
             LocalDateTime agora = LocalDateTime.now();
-            aplicarRegraNegocio(payment.path("status").asText("unknown"), assinatura, empresa, agora, mercadoPagoPaymentId);
+            assinaturaAtivacaoService.aplicarResultadoPagamentoMercadoPago(
+                    payment.path("status").asText("unknown"), assinatura, empresa, agora, mercadoPagoPaymentId);
 
             assinaturaService.salvar(assinatura);
             empresaService.salvar(empresa);
@@ -135,34 +137,6 @@ public class MercadoPagoWebhookService {
                     ref.pedidoId(), mercadoPagoPaymentId, payment, rawPayment, externalRef, statusPagamento);
         } finally {
             TenantContext.clear();
-        }
-    }
-
-    private void aplicarRegraNegocio(String mpStatus, Assinatura assinatura, Tenant empresa, LocalDateTime agora,
-                                     String mercadoPagoPaymentId) {
-        switch (mpStatus == null ? "" : mpStatus.toLowerCase()) {
-            case "approved" -> {
-                assinatura.setStatus(StatusAssinatura.ATIVA);
-                assinatura.setDataInicio(agora);
-                assinatura.setDataFim(agora.plusDays(30));
-                assinatura.setMercadoPagoPaymentId(mercadoPagoPaymentId);
-                empresa.setStatus(StatusEmpresa.ATIVA);
-            }
-            case "pending", "in_process" -> assinatura.setStatus(StatusAssinatura.PENDENTE);
-            case "rejected", "cancelled" -> tratarPagamentoTerminal(assinatura, empresa, StatusAssinatura.CANCELADA);
-            case "refunded", "charged_back" -> tratarPagamentoTerminal(assinatura, empresa, StatusAssinatura.EXPIRADA);
-            default -> log.warn("Status Mercado Pago não mapeado para regra de negócio: {}", mpStatus);
-        }
-    }
-
-    /**
-     * Pagamentos definitivamente negativos não alteram empresas já {@link StatusEmpresa#ATIVA}
-     * (ex.: tentativa de nova cobrança recusada).
-     */
-    private void tratarPagamentoTerminal(Assinatura assinatura, Tenant empresa, StatusAssinatura novoStatusAssinatura) {
-        assinatura.setStatus(novoStatusAssinatura);
-        if (empresa.getStatus() != StatusEmpresa.ATIVA && empresa.getStatus() != StatusEmpresa.CANCELADA) {
-            empresa.setStatus(StatusEmpresa.BLOQUEADA);
         }
     }
 
