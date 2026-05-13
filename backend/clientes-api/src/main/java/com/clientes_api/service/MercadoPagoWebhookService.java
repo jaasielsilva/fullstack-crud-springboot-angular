@@ -4,7 +4,9 @@ import com.clientes_api.config.TenantContext;
 import com.clientes_api.model.Assinatura;
 import com.clientes_api.model.Pagamento;
 import com.clientes_api.model.Tenant;
+import com.clientes_api.model.Usuario;
 import com.clientes_api.model.enums.StatusPagamento;
+import com.clientes_api.repository.UsuarioRepository;
 import com.clientes_api.util.MercadoPagoExternalReference;
 import com.clientes_api.util.PedidoMercadoPagoExternalReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,19 +33,25 @@ public class MercadoPagoWebhookService {
     private final EmpresaService empresaService;
     private final PedidoService pedidoService;
     private final AssinaturaAtivacaoService assinaturaAtivacaoService;
+    private final EmailService emailService;
+    private final UsuarioRepository usuarioRepository;
 
     public MercadoPagoWebhookService(MercadoPagoApiService mercadoPagoApiService,
                                      PagamentoService pagamentoService,
                                      AssinaturaService assinaturaService,
                                      EmpresaService empresaService,
                                      PedidoService pedidoService,
-                                     AssinaturaAtivacaoService assinaturaAtivacaoService) {
+                                     AssinaturaAtivacaoService assinaturaAtivacaoService,
+                                     EmailService emailService,
+                                     UsuarioRepository usuarioRepository) {
         this.mercadoPagoApiService = mercadoPagoApiService;
         this.pagamentoService = pagamentoService;
         this.assinaturaService = assinaturaService;
         this.empresaService = empresaService;
         this.pedidoService = pedidoService;
         this.assinaturaAtivacaoService = assinaturaAtivacaoService;
+        this.emailService = emailService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Transactional
@@ -90,6 +98,9 @@ public class MercadoPagoWebhookService {
                                               String externalRef) {
         TenantContext.setCurrentTenant(parsed.empresaId());
         try {
+            boolean enviarComprovante = "approved".equalsIgnoreCase(payment.path("status").asText(""))
+                    && !pagamentoService.jaAprovado(mercadoPagoPaymentId);
+
             Assinatura assinatura = assinaturaService.buscarPorIdETenantOuErro(parsed.assinaturaId(), parsed.empresaId());
             if (assinatura.getPlano() == null || !assinatura.getPlano().getId().equals(parsed.planoId())) {
                 throw new IllegalArgumentException("external_reference não confere com assinatura/plano persistidos");
@@ -120,9 +131,46 @@ public class MercadoPagoWebhookService {
 
             assinaturaService.salvar(assinatura);
             empresaService.salvar(empresa);
+
+            if (enviarComprovante) {
+                notificarComprovanteMercadoPago(empresa, assinatura, pagamento, mercadoPagoPaymentId);
+            }
         } finally {
             TenantContext.clear();
         }
+    }
+
+    private void notificarComprovanteMercadoPago(
+            Tenant empresa,
+            Assinatura assinatura,
+            Pagamento pagamento,
+            String mercadoPagoPaymentId
+    ) {
+        String destino = resolverEmailComprovante(empresa);
+        if (destino == null) {
+            log.warn("Mercado Pago webhook | comprovante não enviado: nenhum e-mail da empresa ou do primeiro usuário");
+            return;
+        }
+        String planoNome = assinatura.getPlano() != null ? assinatura.getPlano().getNome() : null;
+        emailService.enviarComprovantePagamentoAssinatura(
+                destino,
+                empresa.getNome(),
+                planoNome,
+                pagamento.getValor(),
+                "Mercado Pago",
+                mercadoPagoPaymentId
+        );
+    }
+
+    private String resolverEmailComprovante(Tenant empresa) {
+        if (empresa.getEmail() != null && !empresa.getEmail().isBlank()) {
+            return empresa.getEmail().trim();
+        }
+        return usuarioRepository.findFirstByTenantIdOrderByIdAsc(empresa.getId())
+                .map(Usuario::getLogin)
+                .filter(s -> s != null && !s.isBlank())
+                .map(String::trim)
+                .orElse(null);
     }
 
     private void processarPagamentoPedido(PedidoMercadoPagoExternalReference ref,

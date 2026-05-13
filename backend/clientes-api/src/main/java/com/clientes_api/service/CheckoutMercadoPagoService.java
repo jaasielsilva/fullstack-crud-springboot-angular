@@ -153,7 +153,7 @@ public class CheckoutMercadoPagoService {
         metadata.put("assinatura_id", String.valueOf(assinaturaId));
 
         ObjectNode backUrls = root.putObject("back_urls");
-        backUrls.put("success", frontendUrl + "/pagamento/sucesso");
+        backUrls.put("success", frontendUrl + "/pagamento/sucesso?gateway=mp");
         backUrls.put("failure", frontendUrl + "/pagamento/falha");
         backUrls.put("pending", frontendUrl + "/pagamento/pendente");
 

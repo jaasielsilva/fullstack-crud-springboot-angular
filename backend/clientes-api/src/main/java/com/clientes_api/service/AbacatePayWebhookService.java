@@ -4,9 +4,11 @@ import com.clientes_api.config.TenantContext;
 import com.clientes_api.model.Assinatura;
 import com.clientes_api.model.Pagamento;
 import com.clientes_api.model.Tenant;
+import com.clientes_api.model.Usuario;
 import com.clientes_api.model.enums.StatusPagamento;
 import com.clientes_api.util.AbacatePagamentoIds;
 import com.clientes_api.util.MercadoPagoExternalReference;
+import com.clientes_api.repository.UsuarioRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -22,6 +24,7 @@ import java.security.MessageDigest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Optional;
 
 /**
  * Webhook Abacate Pay — confirma checkout pago, grava {@link com.clientes_api.model.Pagamento} (status aprovado)
@@ -39,6 +42,8 @@ public class AbacatePayWebhookService {
     private final EmpresaService empresaService;
     private final AssinaturaAtivacaoService assinaturaAtivacaoService;
     private final PagamentoService pagamentoService;
+    private final EmailService emailService;
+    private final UsuarioRepository usuarioRepository;
 
     @Value("${abacatepay.webhook-secret:}")
     private String configuredWebhookSecret;
@@ -53,12 +58,16 @@ public class AbacatePayWebhookService {
                                     AssinaturaService assinaturaService,
                                     EmpresaService empresaService,
                                     AssinaturaAtivacaoService assinaturaAtivacaoService,
-                                    PagamentoService pagamentoService) {
+                                    PagamentoService pagamentoService,
+                                    EmailService emailService,
+                                    UsuarioRepository usuarioRepository) {
         this.objectMapper = objectMapper;
         this.assinaturaService = assinaturaService;
         this.empresaService = empresaService;
         this.assinaturaAtivacaoService = assinaturaAtivacaoService;
         this.pagamentoService = pagamentoService;
+        this.emailService = emailService;
+        this.usuarioRepository = usuarioRepository;
     }
 
     /**
@@ -144,12 +153,22 @@ public class AbacatePayWebhookService {
                 }
 
                 Tenant empresa = empresaService.buscarPorIdOuErro(parsed.empresaId());
-                registrarPagamentoAbacate(parsed, assinatura, rawBody, checkoutId, externalId, checkout);
+                String chavePagamento = AbacatePagamentoIds.chavePagamento(checkoutId, externalId);
+                boolean primeiroComprovante = pagamentoService.buscarPorMercadoPagoId(chavePagamento)
+                        .map(p -> p.getStatus() != StatusPagamento.APPROVED)
+                        .orElse(true);
+
+                Pagamento pagamentoGravado = registrarPagamentoAbacate(
+                        parsed, assinatura, rawBody, chavePagamento, externalId, checkout);
 
                 LocalDateTime agora = LocalDateTime.now();
                 assinaturaAtivacaoService.ativarAssinaturaEEmpresa(assinatura, empresa, agora, null);
                 assinaturaService.salvar(assinatura);
                 empresaService.salvar(empresa);
+
+                if (primeiroComprovante) {
+                    notificarComprovantePorEmail(empresa, assinatura, pagamentoGravado, checkoutId, externalId);
+                }
 
                 if (logWebhookInbound) {
                     log.info("Abacate Pay webhook | assinatura ativada | empresaId={} | assinaturaId={}", parsed.empresaId(), parsed.assinaturaId());
@@ -167,20 +186,19 @@ public class AbacatePayWebhookService {
     /**
      * Persiste pagamento aprovado (mesma tabela do Mercado Pago; chave sintética em {@code mercado_pago_payment_id}).
      */
-    private void registrarPagamentoAbacate(
+    private Pagamento registrarPagamentoAbacate(
             MercadoPagoExternalReference parsed,
             Assinatura assinatura,
             String rawBody,
-            String checkoutId,
+            String chavePagamento,
             String externalId,
             JsonNode checkout
     ) {
-        String chave = AbacatePagamentoIds.chavePagamento(checkoutId, externalId);
-        Pagamento p = pagamentoService.buscarPorMercadoPagoId(chave).orElseGet(Pagamento::new);
+        Pagamento p = pagamentoService.buscarPorMercadoPagoId(chavePagamento).orElseGet(Pagamento::new);
         p.setTenantId(parsed.empresaId());
         p.setAssinatura(assinatura);
         p.setPedido(null);
-        p.setMercadoPagoPaymentId(chave);
+        p.setMercadoPagoPaymentId(chavePagamento);
         p.setMercadoPagoPreferenceId(null);
         p.setStatus(StatusPagamento.APPROVED);
         p.setStatusDetail("abacatepay:checkout.completed:PAID");
@@ -193,6 +211,42 @@ public class AbacatePayWebhookService {
         p.setExternalReference(externalId);
         p.setPayloadJson(rawBody);
         pagamentoService.salvar(p);
+        return p;
+    }
+
+    private void notificarComprovantePorEmail(
+            Tenant empresa,
+            Assinatura assinatura,
+            Pagamento pagamento,
+            String checkoutId,
+            String externalId
+    ) {
+        String destino = resolverEmailComprovante(empresa);
+        if (destino == null) {
+            log.warn("Abacate Pay webhook | comprovante não enviado: nenhum e-mail da empresa ou do primeiro usuário");
+            return;
+        }
+        String planoNome = assinatura.getPlano() != null ? assinatura.getPlano().getNome() : null;
+        String ref = (checkoutId != null && !checkoutId.isBlank()) ? checkoutId : externalId;
+        emailService.enviarComprovantePagamentoAssinatura(
+                destino,
+                empresa.getNome(),
+                planoNome,
+                pagamento.getValor(),
+                "Abacate Pay",
+                ref
+        );
+    }
+
+    private String resolverEmailComprovante(Tenant empresa) {
+        if (empresa.getEmail() != null && !empresa.getEmail().isBlank()) {
+            return empresa.getEmail().trim();
+        }
+        return usuarioRepository.findFirstByTenantIdOrderByIdAsc(empresa.getId())
+                .map(Usuario::getLogin)
+                .filter(s -> s != null && !s.isBlank())
+                .map(String::trim)
+                .orElse(null);
     }
 
     private static BigDecimal extrairValorCheckout(JsonNode checkout) {

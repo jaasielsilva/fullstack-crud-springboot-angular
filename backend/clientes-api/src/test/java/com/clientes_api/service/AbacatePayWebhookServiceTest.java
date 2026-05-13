@@ -5,6 +5,7 @@ import com.clientes_api.model.Pagamento;
 import com.clientes_api.model.Plano;
 import com.clientes_api.model.Tenant;
 import com.clientes_api.model.enums.StatusPagamento;
+import com.clientes_api.repository.UsuarioRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,12 @@ class AbacatePayWebhookServiceTest {
     @Mock
     private PagamentoService pagamentoService;
 
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
     private AbacatePayWebhookService service;
 
     @BeforeEach
@@ -52,7 +59,9 @@ class AbacatePayWebhookServiceTest {
                 assinaturaService,
                 empresaService,
                 assinaturaAtivacaoService,
-                pagamentoService);
+                pagamentoService,
+                emailService,
+                usuarioRepository);
         ReflectionTestUtils.setField(service, "configuredWebhookSecret", "");
         ReflectionTestUtils.setField(service, "webhookHmacKey", "");
         ReflectionTestUtils.setField(service, "logWebhookInbound", false);
@@ -78,6 +87,7 @@ class AbacatePayWebhookServiceTest {
         Plano plano = new Plano();
         plano.setId(1L);
         plano.setValor(new BigDecimal("99.00"));
+        plano.setNome("Plano Gold");
 
         Assinatura assinatura = new Assinatura();
         assinatura.setId(1L);
@@ -86,6 +96,8 @@ class AbacatePayWebhookServiceTest {
 
         Tenant empresa = new Tenant();
         empresa.setId(1L);
+        empresa.setNome("Acme");
+        empresa.setEmail("financeiro@acme.com");
 
         when(assinaturaService.buscarPorIdETenantOuErro(1L, 1L)).thenReturn(assinatura);
         when(empresaService.buscarPorIdOuErro(1L)).thenReturn(empresa);
@@ -105,6 +117,14 @@ class AbacatePayWebhookServiceTest {
         verify(assinaturaAtivacaoService).ativarAssinaturaEEmpresa(eq(assinatura), eq(empresa), any(), isNull());
         verify(assinaturaService).salvar(assinatura);
         verify(empresaService).salvar(empresa);
+
+        verify(emailService).enviarComprovantePagamentoAssinatura(
+                eq("financeiro@acme.com"),
+                eq("Acme"),
+                eq("Plano Gold"),
+                eq(new BigDecimal("89.90")),
+                eq("Abacate Pay"),
+                eq("bill_x"));
     }
 
     @Test
@@ -118,6 +138,7 @@ class AbacatePayWebhookServiceTest {
 
         verifyNoInteractions(pagamentoService);
         verifyNoInteractions(assinaturaAtivacaoService);
+        verifyNoInteractions(emailService);
     }
 
     @Test
@@ -138,5 +159,6 @@ class AbacatePayWebhookServiceTest {
 
         verify(pagamentoService, never()).salvar(any());
         verifyNoInteractions(assinaturaAtivacaoService);
+        verifyNoInteractions(emailService);
     }
 }

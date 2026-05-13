@@ -155,7 +155,7 @@ public class CheckoutAbacatePayService {
         methods.add("CARD");
 
         root.put("returnUrl", frontendUrl + "/planos");
-        root.put("completionUrl", frontendUrl + "/pagamento/sucesso");
+        root.put("completionUrl", frontendUrl + "/pagamento/sucesso?gateway=abacate");
         root.put("externalId", externalReference);
 
         ObjectNode metadata = root.putObject("metadata");
