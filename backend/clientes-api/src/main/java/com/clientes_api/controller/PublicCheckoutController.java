@@ -5,6 +5,7 @@ import com.clientes_api.dto.CheckoutResponseDTO;
 import com.clientes_api.dto.PlanoResponseDTO;
 import com.clientes_api.model.Plano;
 import com.clientes_api.model.Usuario;
+import com.clientes_api.service.CheckoutAbacatePayService;
 import com.clientes_api.service.CheckoutMercadoPagoService;
 import com.clientes_api.service.PlanoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,16 +19,19 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/public")
-@Tag(name = "Checkout público", description = "Planos e checkout Mercado Pago (backend seguro)")
+@Tag(name = "Checkout público", description = "Planos, Mercado Pago e Abacate Pay (backend seguro)")
 public class PublicCheckoutController {
 
     private final PlanoService planoService;
     private final CheckoutMercadoPagoService checkoutMercadoPagoService;
+    private final CheckoutAbacatePayService checkoutAbacatePayService;
 
     public PublicCheckoutController(PlanoService planoService,
-                                    CheckoutMercadoPagoService checkoutMercadoPagoService) {
+                                    CheckoutMercadoPagoService checkoutMercadoPagoService,
+                                    CheckoutAbacatePayService checkoutAbacatePayService) {
         this.planoService = planoService;
         this.checkoutMercadoPagoService = checkoutMercadoPagoService;
+        this.checkoutAbacatePayService = checkoutAbacatePayService;
     }
 
     @GetMapping("/planos")
@@ -46,6 +50,15 @@ public class PublicCheckoutController {
             @AuthenticationPrincipal Usuario usuario
     ) {
         return ResponseEntity.ok(checkoutMercadoPagoService.criarCheckout(body, usuario));
+    }
+
+    @PostMapping("/checkout/abacate")
+    @Operation(summary = "Cria cobrança Abacate Pay e devolve URL de checkout")
+    public ResponseEntity<CheckoutResponseDTO> checkoutAbacate(
+            @Valid @RequestBody CheckoutRequestDTO body,
+            @AuthenticationPrincipal Usuario usuario
+    ) {
+        return ResponseEntity.ok(checkoutAbacatePayService.criarCheckout(body, usuario));
     }
 
     private static PlanoResponseDTO mapear(Plano p) {

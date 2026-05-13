@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/planos").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/public/checkout").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/public/checkout/abacate").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/public/cadastro-trial").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/mercadopago").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

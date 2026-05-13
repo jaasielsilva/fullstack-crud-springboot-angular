@@ -7,6 +7,8 @@ import { PlanoPublico } from '../../models/plano-public.model';
 import { AuthService } from '../../security/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
 
+type CheckoutGateway = 'mp' | 'abacate';
+
 @Component({
   selector: 'app-planos',
   standalone: true,
@@ -18,7 +20,8 @@ export class PlanosComponent implements OnInit {
   planos: PlanoPublico[] = [];
   carregandoLista = true;
   checkoutErro = '';
-  contratandoId: number | null = null;
+  /** Checkout em andamento: desabilita ambos os botões até redirect ou erro */
+  checkoutEmAndamento: null | { gateway: CheckoutGateway; planoId: number } = null;
 
   constructor(private http: HttpClient, private auth: AuthService) {}
 
@@ -35,7 +38,15 @@ export class PlanosComponent implements OnInit {
     });
   }
 
-  assinar(planoId: number): void {
+  assinarMercadoPago(planoId: number): void {
+    this.iniciarCheckout(planoId, 'mp');
+  }
+
+  assinarAbacatePay(planoId: number): void {
+    this.iniciarCheckout(planoId, 'abacate');
+  }
+
+  private iniciarCheckout(planoId: number, gateway: CheckoutGateway): void {
     const empresaId = this.auth.getTenantId();
     if (!empresaId) {
       this.checkoutErro = 'Sessão inválida. Faça login novamente.';
@@ -43,14 +54,17 @@ export class PlanosComponent implements OnInit {
     }
 
     this.checkoutErro = '';
-    this.contratandoId = planoId;
+    this.checkoutEmAndamento = { gateway, planoId };
+
+    const path =
+      gateway === 'mp' ? `${environment.apiUrl}/api/public/checkout` : `${environment.apiUrl}/api/public/checkout/abacate`;
 
     this.http
       .post<{
         checkoutUrl?: string;
         preferenceId?: string;
         init_point?: string;
-      }>(`${environment.apiUrl}/api/public/checkout`, {
+      }>(path, {
         empresaId,
         planoId
       })
@@ -58,17 +72,17 @@ export class PlanosComponent implements OnInit {
         next: (res) => {
           const initPoint = res.checkoutUrl ?? res.init_point;
           if (!environment.production) {
-            console.log('init_point (checkoutUrl)', initPoint);
+            console.log(`[${gateway}] checkoutUrl`, initPoint);
           }
           if (initPoint) {
             window.location.href = initPoint;
           } else {
             this.checkoutErro = 'URL de checkout não retornada pelo servidor.';
-            this.contratandoId = null;
+            this.checkoutEmAndamento = null;
           }
         },
         error: (err: HttpErrorResponse) => {
-          this.contratandoId = null;
+          this.checkoutEmAndamento = null;
           if (err.error?.erro) {
             this.checkoutErro = err.error.erro;
           } else {
@@ -76,6 +90,14 @@ export class PlanosComponent implements OnInit {
           }
         }
       });
+  }
+
+  redirecionando(planoId: number, gateway: CheckoutGateway): boolean {
+    return (
+      this.checkoutEmAndamento !== null &&
+      this.checkoutEmAndamento.planoId === planoId &&
+      this.checkoutEmAndamento.gateway === gateway
+    );
   }
 
   formatMoney(v: number): string {
@@ -90,5 +112,10 @@ export class PlanosComponent implements OnInit {
       return 'Assinar Premium';
     }
     return 'Assinar';
+  }
+
+  labelBotaoAbacate(plano: PlanoPublico): string {
+    const base = this.labelBotao(plano).replace(/^Assinar\s+/, '');
+    return `Abacate Pay — ${base}`;
   }
 }

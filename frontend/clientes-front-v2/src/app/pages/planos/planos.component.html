@@ -1,7 +1,9 @@
 <div class="container py-5">
   <div class="text-center mb-5">
     <h1 class="h3 fw-bold">Escolha seu plano</h1>
-    <p class="text-muted mb-0">Cobrança segura via Mercado Pago. O acesso é liberado após confirmação do pagamento (webhook).</p>
+    <p class="text-muted mb-0 small">
+      Mercado Pago: fluxo completo com webhook. Abacate Pay: redireciona ao checkout deles (webhook de confirmação pode ser integrado depois).
+    </p>
   </div>
 
   <div *ngIf="checkoutErro" class="alert alert-danger max-width-alert mx-auto">{{ checkoutErro }}</div>
@@ -17,12 +19,21 @@
           <div class="display-6 fw-bold text-primary mb-4">{{ formatMoney(p.valor) }}<span class="fs-6 text-muted fw-normal">/mês</span></div>
           <button
             type="button"
-            class="btn btn-lg btn-primary w-100"
-            [disabled]="contratandoId !== null"
-            (click)="assinar(p.id)"
+            class="btn btn-lg btn-primary w-100 mb-2"
+            [disabled]="checkoutEmAndamento !== null"
+            (click)="assinarMercadoPago(p.id)"
           >
-            <span *ngIf="contratandoId !== p.id">{{ labelBotao(p) }}</span>
-            <span *ngIf="contratandoId === p.id">Redirecionando...</span>
+            <span *ngIf="!redirecionando(p.id, 'mp')">{{ labelBotao(p) }} (Mercado Pago)</span>
+            <span *ngIf="redirecionando(p.id, 'mp')">Redirecionando…</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-lg btn-outline-secondary w-100"
+            [disabled]="checkoutEmAndamento !== null"
+            (click)="assinarAbacatePay(p.id)"
+          >
+            <span *ngIf="!redirecionando(p.id, 'abacate')">{{ labelBotaoAbacate(p) }}</span>
+            <span *ngIf="redirecionando(p.id, 'abacate')">Redirecionando…</span>
           </button>
         </div>
       </div>

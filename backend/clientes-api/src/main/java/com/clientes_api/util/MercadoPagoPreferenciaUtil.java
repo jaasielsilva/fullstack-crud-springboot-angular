@@ -1,5 +1,7 @@
 package com.clientes_api.util;
 
+import com.clientes_api.exception.BusinessException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.regex.Pattern;
@@ -18,6 +20,47 @@ public final class MercadoPagoPreferenciaUtil {
     private static final Pattern EMAIL_SIMPLES = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private MercadoPagoPreferenciaUtil() {
+    }
+
+    /**
+     * Campos mínimos exigidos/recomendados pelo Mercado Pago para conciliação, webhooks e índice de aprovação.
+     */
+    public static void assertPreferenciaConformidade(ObjectNode root) {
+        if (textTrimOrEmpty(root.path("external_reference")).isEmpty()) {
+            throw new BusinessException(
+                    "external_reference é obrigatório: use um código único para correlacionar payment_id com o registro interno.");
+        }
+        if (textTrimOrEmpty(root.path("notification_url")).isEmpty()) {
+            throw new BusinessException(
+                    "notification_url é obrigatório: configure mercadopago.notification-url com o endpoint HTTPS do webhook.");
+        }
+        JsonNode items = root.path("items");
+        if (!items.isArray() || items.isEmpty()) {
+            throw new BusinessException("A preferência deve conter ao menos um item em items[].");
+        }
+        JsonNode item0 = items.get(0);
+        if (textTrimOrEmpty(item0.path("id")).isEmpty()) {
+            throw new BusinessException("items[0].id é obrigatório (código do item).");
+        }
+        if (textTrimOrEmpty(item0.path("title")).isEmpty()) {
+            throw new BusinessException("items[0].title é obrigatório (nome do item).");
+        }
+        if (textTrimOrEmpty(item0.path("description")).isEmpty()) {
+            throw new BusinessException("items[0].description é obrigatório (descrição do item).");
+        }
+        if (textTrimOrEmpty(item0.path("category_id")).isEmpty()) {
+            throw new BusinessException("items[0].category_id é obrigatório (categoria do item).");
+        }
+    }
+
+    private static String textTrimOrEmpty(JsonNode n) {
+        if (n == null || n.isNull() || n.isMissingNode()) {
+            return "";
+        }
+        if (n.isTextual()) {
+            return n.asText("").trim();
+        }
+        return n.asText("").trim();
     }
 
     public static boolean emailValidoParaCheckout(String email) {

@@ -90,7 +90,13 @@ public class CheckoutPedidoMercadoPagoService {
         item.put("id", externalReference);
         item.put("category_id", MercadoPagoPreferenciaUtil.ITEM_CATEGORY_PADRAO);
         item.put("title", "Pedido #" + pedido.getId() + " — ERP");
-        item.put("description", "Pagamento do pedido para " + pedido.getCliente().getNome());
+        String nomeCliente = pedido.getCliente().getNome() != null ? pedido.getCliente().getNome().trim() : "Cliente";
+        item.put(
+                "description",
+                "Pagamento total do pedido #" + pedido.getId() + " — " + nomeCliente
+                        + " — referência " + externalReference
+        );
+
         item.put("quantity", 1);
         item.put("currency_id", "BRL");
         BigDecimal valorPedido = BigDecimal.valueOf(pedido.getValorTotal());
@@ -105,16 +111,27 @@ public class CheckoutPedidoMercadoPagoService {
                     "Cadastre um e-mail válido no cliente ou na empresa para gerar cobrança (exigência Mercado Pago).");
         }
         payer.put("email", email);
+        MercadoPagoPreferenciaUtil.preencherPayerNome(payer, nomeCliente);
+        MercadoPagoPreferenciaUtil.preencherPayerTelefoneBrasil(payer, pedido.getCliente().getTelefone());
+        MercadoPagoPreferenciaUtil.preencherPayerIdentificacaoBrasil(payer, empresa.getDocumento());
 
         root.put("external_reference", externalReference);
-        root.put("notification_url", notificationUrl);
+        root.put("notification_url", notificationUrl == null ? "" : notificationUrl.trim());
+
+        ObjectNode metadata = root.putObject("metadata");
+        metadata.put("tipo", "pedido");
+        metadata.put("tenant_id", String.valueOf(tenantId));
+        metadata.put("pedido_id", String.valueOf(pedido.getId()));
 
         ObjectNode backUrls = root.putObject("back_urls");
         backUrls.put("success", frontendUrl + "/pedidos?mp=success");
         backUrls.put("failure", frontendUrl + "/pedidos?mp=failure");
         backUrls.put("pending", frontendUrl + "/pedidos?mp=pending");
 
-        root.put("auto_return", "approved");
+        if (!frontendUrl.contains("localhost") && !frontendUrl.contains("127.0.0.1")) {
+            root.put("auto_return", "approved");
+        }
+        MercadoPagoPreferenciaUtil.assertPreferenciaConformidade(root);
         return root;
     }
 

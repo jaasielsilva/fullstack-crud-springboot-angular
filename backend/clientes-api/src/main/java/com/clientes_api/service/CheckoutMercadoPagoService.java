@@ -91,7 +91,7 @@ public class CheckoutMercadoPagoService {
         assinatura.setExternalReference(externalReference);
         assinatura = assinaturaService.salvar(assinatura);
 
-        ObjectNode body = montarPreferencia(plano, empresa, externalReference, usuarioLogado);
+        ObjectNode body = montarPreferencia(plano, empresa, externalReference, assinatura.getId(), usuarioLogado);
         var response = mercadoPagoApiService.criarPreferencia(body);
 
         String prefId = response.path("id").asText(null);
@@ -107,7 +107,13 @@ public class CheckoutMercadoPagoService {
         return new CheckoutResponseDTO(checkoutUrl, prefId);
     }
 
-    private ObjectNode montarPreferencia(Plano plano, Tenant empresa, String externalReference, Usuario usuarioLogado) {
+    private ObjectNode montarPreferencia(
+            Plano plano,
+            Tenant empresa,
+            String externalReference,
+            long assinaturaId,
+            Usuario usuarioLogado
+    ) {
         ObjectNode root = objectMapper.createObjectNode();
 
         ArrayNode items = root.putArray("items");
@@ -130,9 +136,21 @@ public class CheckoutMercadoPagoService {
                     "Cadastre um e-mail válido na empresa ou use login com e-mail para o checkout (exigência Mercado Pago).");
         }
         payer.put("email", email);
+        String nomePagador = empresa.getNome() != null && !empresa.getNome().isBlank()
+                ? empresa.getNome()
+                : (usuarioLogado.getUsername() != null ? usuarioLogado.getUsername() : "Cliente");
+        MercadoPagoPreferenciaUtil.preencherPayerNome(payer, nomePagador);
+        MercadoPagoPreferenciaUtil.preencherPayerIdentificacaoBrasil(payer, empresa.getDocumento());
+        MercadoPagoPreferenciaUtil.preencherPayerTelefoneBrasil(payer, empresa.getTelefone());
 
         root.put("external_reference", externalReference);
-        root.put("notification_url", notificationUrl);
+        root.put("notification_url", notificationUrl == null ? "" : notificationUrl.trim());
+
+        ObjectNode metadata = root.putObject("metadata");
+        metadata.put("tipo", "assinatura");
+        metadata.put("empresa_id", String.valueOf(empresa.getId()));
+        metadata.put("plano_id", String.valueOf(plano.getId()));
+        metadata.put("assinatura_id", String.valueOf(assinaturaId));
 
         ObjectNode backUrls = root.putObject("back_urls");
         backUrls.put("success", frontendUrl + "/pagamento/sucesso");
@@ -143,6 +161,7 @@ public class CheckoutMercadoPagoService {
         if (!frontendUrl.contains("localhost") && !frontendUrl.contains("127.0.0.1")) {
             root.put("auto_return", "approved");
         }
+        MercadoPagoPreferenciaUtil.assertPreferenciaConformidade(root);
         return root;
     }
 
