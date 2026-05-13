@@ -24,7 +24,6 @@ import java.security.MessageDigest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Optional;
 
 /**
  * Webhook Abacate Pay — confirma checkout pago, grava {@link com.clientes_api.model.Pagamento} (status aprovado)
@@ -230,6 +229,7 @@ public class AbacatePayWebhookService {
         String ref = (checkoutId != null && !checkoutId.isBlank()) ? checkoutId : externalId;
         emailService.enviarComprovantePagamentoAssinatura(
                 destino,
+                empresa.getId(),
                 empresa.getNome(),
                 planoNome,
                 pagamento.getValor(),

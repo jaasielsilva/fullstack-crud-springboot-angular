@@ -1,5 +1,6 @@
 package com.clientes_api.service;
 
+import com.clientes_api.config.TenantContext;
 import com.clientes_api.model.EmailConfig;
 import com.clientes_api.repository.EmailConfigRepository;
 import org.slf4j.Logger;
@@ -24,9 +25,8 @@ public class EmailService {
     @Autowired
     private EmailConfigRepository configRepository;
 
-    public void enviarEmailRecuperacao(String para, String token) {
-        EmailConfig config = configRepository.findFirstByOrderByIdAsc()
-                .orElseThrow(() -> new RuntimeException("Configuração de e-mail não encontrada. Configure o e-mail no módulo de Configurações."));
+    public void enviarEmailRecuperacao(String para, String token, Long tenantId) {
+        EmailConfig config = buscarConfigObrigatoria(tenantId);
 
         JavaMailSender mailSender = createMailSender(config);
 
@@ -47,6 +47,7 @@ public class EmailService {
      */
     public void enviarComprovantePagamentoAssinatura(
             String destinatario,
+            Long tenantId,
             String nomeEmpresa,
             String nomePlano,
             BigDecimal valor,
@@ -57,9 +58,9 @@ public class EmailService {
             log.warn("Comprovante por e-mail não enviado: destinatário ausente.");
             return;
         }
-        Optional<EmailConfig> cfgOpt = configRepository.findFirstByOrderByIdAsc();
+        Optional<EmailConfig> cfgOpt = buscarConfig(tenantId);
         if (cfgOpt.isEmpty()) {
-            log.warn("Comprovante por e-mail não enviado: configuração SMTP não cadastrada.");
+            log.warn("Comprovante por e-mail não enviado: configuração SMTP não cadastrada para tenant {}.", resolverTenantId(tenantId));
             return;
         }
         EmailConfig config = cfgOpt.get();
@@ -89,6 +90,24 @@ public class EmailService {
         } catch (Exception e) {
             log.error("Falha ao enviar comprovante por e-mail para {}: {}", destinatario, e.getMessage());
         }
+    }
+
+    private EmailConfig buscarConfigObrigatoria(Long tenantId) {
+        Long resolvedTenantId = resolverTenantId(tenantId);
+        return buscarConfig(resolvedTenantId)
+                .orElseThrow(() -> new RuntimeException("Configuração de e-mail não encontrada para este tenant. Configure o e-mail no módulo de Configurações."));
+    }
+
+    private Optional<EmailConfig> buscarConfig(Long tenantId) {
+        Long resolvedTenantId = resolverTenantId(tenantId);
+        if (resolvedTenantId == null) {
+            return Optional.empty();
+        }
+        return configRepository.findByTenantId(resolvedTenantId);
+    }
+
+    private Long resolverTenantId(Long tenantId) {
+        return tenantId != null ? tenantId : TenantContext.getCurrentTenant();
     }
 
     private JavaMailSender createMailSender(EmailConfig config) {

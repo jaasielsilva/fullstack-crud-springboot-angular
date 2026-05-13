@@ -120,6 +120,7 @@ class AbacatePayWebhookServiceTest {
 
         verify(emailService).enviarComprovantePagamentoAssinatura(
                 eq("financeiro@acme.com"),
+                eq(1L),
                 eq("Acme"),
                 eq("Plano Gold"),
                 eq(new BigDecimal("89.90")),

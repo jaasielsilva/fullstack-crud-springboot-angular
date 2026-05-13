@@ -120,7 +120,7 @@ public class AuthenticationController {
         repository.save(usuario);
 
         try {
-            emailService.enviarEmailRecuperacao(usuario.getLogin(), token);
+            emailService.enviarEmailRecuperacao(usuario.getLogin(), token, usuario.getTenantId());
             return ResponseEntity.ok(Map.of("mensagem", "E-mail de recuperação enviado com sucesso!"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("erro", "Erro ao enviar e-mail: " + e.getMessage()));

@@ -154,6 +154,7 @@ public class MercadoPagoWebhookService {
         String planoNome = assinatura.getPlano() != null ? assinatura.getPlano().getNome() : null;
         emailService.enviarComprovantePagamentoAssinatura(
                 destino,
+                empresa.getId(),
                 empresa.getNome(),
                 planoNome,
                 pagamento.getValor(),

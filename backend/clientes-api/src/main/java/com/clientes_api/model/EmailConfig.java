@@ -6,7 +6,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Table(name = "email_configs")
+@Table(
+        name = "email_configs",
+        uniqueConstraints = @UniqueConstraint(name = "uk_email_configs_tenant", columnNames = "tenant_id")
+)
 @Entity(name = "EmailConfig")
 @Getter
 @Setter
@@ -18,6 +21,9 @@ public class EmailConfig {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     private String host;
     private Integer port;
     private String usuario;
@@ -26,7 +32,8 @@ public class EmailConfig {
     private Boolean auth = true;
     private Boolean starttls = true;
 
-    public EmailConfig(String host, Integer port, String usuario, String senha) {
+    public EmailConfig(Long tenantId, String host, Integer port, String usuario, String senha) {
+        this.tenantId = tenantId;
         this.host = host;
         this.port = port;
         this.usuario = usuario;
