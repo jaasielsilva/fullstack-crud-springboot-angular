@@ -24,7 +24,7 @@ import java.math.RoundingMode;
 
 /**
  * Checkout de assinatura via Abacate Pay API <strong>v2</strong> (produto avulso + checkout hospedado).
- * Webhook de confirmação pode ser adicionado depois; hoje apenas cria checkout e URL.
+ * Confirmação de pagamento: {@code POST /api/webhooks/abacatepay} ({@code checkout.completed} / {@code PAID}).
  */
 @Service
 public class CheckoutAbacatePayService {

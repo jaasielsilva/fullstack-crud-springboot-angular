@@ -10,6 +10,16 @@
     <a routerLink="/planos" class="btn btn-sm btn-dark">Ver planos</a>
   </div>
 
+  <div *ngIf="s.mensagemRenovacaoAssinatura"
+       class="alert alert-secondary trial-banner mb-0 rounded-0 border-0 d-flex align-items-center justify-content-between flex-wrap gap-2"
+       role="status">
+    <span>
+      <i class="bi bi-calendar-event me-2"></i>
+      {{ s.mensagemRenovacaoAssinatura }}
+    </span>
+    <a routerLink="/planos" class="btn btn-sm btn-outline-dark">Planos</a>
+  </div>
+
   <div *ngIf="s.pagamentoPendente"
        class="alert alert-warning mb-0 rounded-0 border-0 py-2 small"
        role="status">
