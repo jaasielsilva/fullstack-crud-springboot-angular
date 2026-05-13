@@ -35,6 +35,27 @@ public class DashboardExecutivoResponseDTO {
     private List<ProdutoVariacaoDTO> topVariacoes = new ArrayList<>();
     private List<PedidoResumoDTO> pedidosRecentes = new ArrayList<>();
 
+    /** Receita diária no período + despesa estimada (proxy operacional para visualização). */
+    private List<SerieDiaDTO> serieReceitaDespesa = new ArrayList<>();
+
+    /** Fatia de vendas por agrupamento de produto (top N + Outros), com base no faturamento dos itens. */
+    private List<CategoriaVendaDTO> vendasPorCategoria = new ArrayList<>();
+
+    @Data
+    public static class SerieDiaDTO {
+        private String dia;
+        private Double receita;
+        /** Estimativa para gráfico executivo (não substitui módulo financeiro). */
+        private Double despesa;
+    }
+
+    @Data
+    public static class CategoriaVendaDTO {
+        private String categoria;
+        private Double valor;
+        private Double percentual;
+    }
+
     @Data
     public static class NomeValorDTO {
         private String nome;

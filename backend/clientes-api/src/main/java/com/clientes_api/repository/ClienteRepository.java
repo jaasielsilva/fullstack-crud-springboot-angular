@@ -9,4 +9,6 @@ import com.clientes_api.model.Cliente;
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     Optional<Cliente> findFirstByEmail(String email);
+
+    Optional<Cliente> findByIdAndTenantId(Long id, Long tenantId);
 }

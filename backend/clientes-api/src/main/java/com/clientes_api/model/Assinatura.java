@@ -38,6 +38,10 @@ public class Assinatura extends AuditModel {
     @Column(name = "mercado_pago_preference_id")
     private String mercadoPagoPreferenceId;
 
+    /** Cobrança Abacate Pay ({@code bill_…}); mutuamente exclusivo com preferência MP na prática por fluxo. */
+    @Column(name = "abacate_pay_billing_id", length = 128)
+    private String abacatePayBillingId;
+
     @Column(name = "external_reference", length = 512)
     private String externalReference;
 }

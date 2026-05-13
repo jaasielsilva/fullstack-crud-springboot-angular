@@ -11,5 +11,8 @@ public record SubscriptionSnapshotDTO(
         Long diasTrialRestantes,
         boolean pagamentoPendente,
         String mensagemPagamentoPendente,
+        /** Dias até {@code dataFim} da assinatura ativa (alerta de renovação), tipicamente 0–7. */
+        Long diasAteVencimentoAssinatura,
+        String mensagemRenovacaoAssinatura,
         List<String> recursosLiberados
 ) {}

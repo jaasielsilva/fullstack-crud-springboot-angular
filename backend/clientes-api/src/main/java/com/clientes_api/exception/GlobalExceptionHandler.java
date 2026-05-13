@@ -12,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.persistence.PersistenceException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
@@ -45,6 +46,63 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(erro);
     }
 
+    /**
+     * Erros de persistência (JPA/Hibernate), com mensagem amigável quando o stack técnico não ajuda o usuário final.
+     */
+    @ExceptionHandler(PersistenceException.class)
+    public ResponseEntity<Map<String, Object>> handlePersistenceException(
+            PersistenceException ex,
+            HttpServletRequest request) {
+
+        String mensagemUsuario = "Não foi possível salvar os dados. Verifique as informações e tente novamente.";
+        Throwable t = ex;
+        while (t != null) {
+            String m = t.getMessage();
+            if (m != null) {
+                if (m.contains("orphan") || m.contains("orphanRemoval")) {
+                    mensagemUsuario = "Não foi possível atualizar os itens do pedido. Recarregue a página e tente novamente.";
+                    break;
+                }
+                if (m.contains("constraint") || m.contains("foreign key") || m.contains("Duplicate")) {
+                    mensagemUsuario = "Esta operação conflita com outros dados no sistema (integridade). Verifique e tente novamente.";
+                    break;
+                }
+            }
+            t = t.getCause();
+        }
+
+        Map<String, Object> erro = new HashMap<>();
+        erro.put("timestamp", LocalDateTime.now());
+        erro.put("status", HttpStatus.BAD_REQUEST.value());
+        erro.put("erro", mensagemUsuario);
+        erro.put("path", request.getRequestURI());
+
+        return ResponseEntity.badRequest().body(erro);
+    }
+
+    /**
+     * Hibernate costuma lançar IllegalStateException em falhas de coleção (ex.: orphanRemoval).
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalStateException(
+            IllegalStateException ex,
+            HttpServletRequest request) {
+
+        String mensagemUsuario = "Operação não pôde ser concluída. Tente novamente.";
+        String m = ex.getMessage();
+        if (m != null && (m.contains("orphan") || m.contains("orphanRemoval") || m.contains("referenced by the owning entity"))) {
+            mensagemUsuario = "Não foi possível atualizar os itens do pedido. Recarregue a página e tente novamente.";
+        }
+
+        Map<String, Object> erro = new HashMap<>();
+        erro.put("timestamp", LocalDateTime.now());
+        erro.put("status", HttpStatus.BAD_REQUEST.value());
+        erro.put("erro", mensagemUsuario);
+        erro.put("path", request.getRequestURI());
+
+        return ResponseEntity.badRequest().body(erro);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(
             RuntimeException ex,
@@ -53,7 +111,7 @@ public class GlobalExceptionHandler {
         Map<String, Object> erro = new HashMap<>();
         erro.put("timestamp", LocalDateTime.now());
         erro.put("status", HttpStatus.BAD_REQUEST.value());
-        erro.put("erro", ex.getMessage());
+        erro.put("erro", ex.getMessage() != null ? ex.getMessage() : "Ocorreu um erro inesperado. Tente novamente.");
         erro.put("path", request.getRequestURI());
 
         return ResponseEntity.badRequest().body(erro);

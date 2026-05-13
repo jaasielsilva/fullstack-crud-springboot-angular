@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ClienteService } from './cliente.service';
 import { Cliente } from './cliente.model';
+import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-clientes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.css'
 })
@@ -24,6 +25,9 @@ export class ClientesComponent implements OnInit {
   // Toast State
   mensagem = '';
   tipoMensagem: 'success' | 'danger' = 'success';
+
+  showConfirmModal = false;
+  idParaExcluir: number | null = null;
 
   constructor(private service: ClienteService) { }
 
@@ -88,15 +92,28 @@ export class ClientesComponent implements OnInit {
     this.mostrarForm = true; // Abre o painel
   }
 
-  deletar(id: number): void {
-    if (!confirm('Deseja realmente excluir este cliente?')) return;
+  confirmarExcluir(id: number): void {
+    this.idParaExcluir = id;
+    this.showConfirmModal = true;
+  }
+
+  executarExclusao(): void {
+    if (this.idParaExcluir == null) return;
+    const id = this.idParaExcluir;
     this.service.deletar(id).subscribe({
       next: () => {
         this.clientes = this.clientes.filter(c => c.id !== id);
         this.alerta('Cliente excluído com sucesso!', 'success');
+        this.showConfirmModal = false;
+        this.idParaExcluir = null;
       },
       error: (err: HttpErrorResponse) => this.alerta(this.mensagemErro(err), 'danger')
     });
+  }
+
+  fecharModalExcluir(): void {
+    this.showConfirmModal = false;
+    this.idParaExcluir = null;
   }
 
   resetar(): void {

@@ -20,8 +20,13 @@ public class Pagamento extends AuditModel {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assinatura_id")
+    @JoinColumn(name = "assinatura_id", nullable = true)
     private Assinatura assinatura;
+
+    /** Pagamento vinculado a pedido B2B (checkout de pedido). Mutuamente exclusivo com {@link #assinatura} na aplicação. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pedido_id", nullable = true)
+    private Pedido pedido;
 
     @Column(name = "mercado_pago_payment_id", unique = true, length = 64)
     private String mercadoPagoPaymentId;

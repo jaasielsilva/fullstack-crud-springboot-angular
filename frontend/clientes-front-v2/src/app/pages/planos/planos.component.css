@@ -1,7 +1,34 @@
+.planos-page {
+  min-height: 60vh;
+}
+
+.planos-header {
+  max-width: 36rem;
+}
+
+.planos-lead {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
 .plan-card {
   border-radius: 16px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.plan-card:hover {
+  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px);
 }
 
 .max-width-alert {
   max-width: 720px;
+}
+
+.x-small {
+  font-size: 0.75rem;
+}
+
+.letter-spacing {
+  letter-spacing: 0.08em;
 }

@@ -5,7 +5,16 @@ export interface Pedido {
   status: string;
   valorTotal: number;
   dataPedido: string;
+  dataPagamento?: string | null;
+  mercadoPagoPreferenceId?: string | null;
   itens?: ItemPedidoResponse[];
+}
+
+export interface CheckoutPedidoResponse {
+  checkoutUrl?: string;
+  preferenceId?: string;
+  /** Alias do Mercado Pago; mesmo valor que checkoutUrl quando o backend envia os dois. */
+  init_point?: string;
 }
 
 export interface ItemPedidoResponse {

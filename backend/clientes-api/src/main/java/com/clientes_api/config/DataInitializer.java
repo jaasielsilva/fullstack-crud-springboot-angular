@@ -68,7 +68,7 @@ public class DataInitializer implements CommandLineRunner {
 
                 planoRepository.save(basico);
                 planoRepository.save(premium);
-                logger.info("✅ Planos Básico e Premium criados no catálogo.");
+                logger.info("[OK] Planos Básico e Premium criados no catálogo.");
             }
 
             // Se não houver tenants, criamos um padrão
@@ -80,13 +80,13 @@ public class DataInitializer implements CommandLineRunner {
                 matriz.setTrialInicio(null);
                 matriz.setTrialFim(null);
                 defaultTenant = tenantRepository.save(matriz);
-                logger.info("✅ Tenant padrão criado: {}", defaultTenant.getNome());
+                logger.info("[OK] Tenant padrão criado: {}", defaultTenant.getNome());
             } else {
                 defaultTenant = tenantRepository.findAll().stream()
                         .filter(t -> adminEmail.equalsIgnoreCase(t.getEmail()))
                         .findFirst()
                         .orElse(tenantRepository.findAll().get(0));
-                logger.info("ℹ️ Utilizando Tenant existente: {}", defaultTenant.getNome());
+                logger.info("[INFO] Utilizando Tenant existente: {}", defaultTenant.getNome());
             }
 
             // IMPORTANTE: Definir o contexto de Tenant para permitir a gravação inicial
@@ -106,12 +106,12 @@ public class DataInitializer implements CommandLineRunner {
 
                 repository.save(admin);
 
-                logger.info("✅ Usuário {} criado com sucesso.", adminEmail);
+                logger.info("[OK] Usuário {} criado com sucesso.", adminEmail);
             } else {
-                logger.info("ℹ️ Admin {} já existe, pulando criação.", adminEmail);
+                logger.info("[INFO] Admin {} já existe, pulando criação.", adminEmail);
             }
         } catch (Exception e) {
-            logger.error("❌ ERRO CRÍTICO NA INICIALIZAÇÃO: {}", e.getMessage(), e);
+            logger.error("[ERRO] Falha na inicialização de dados: {}", e.getMessage(), e);
             throw e;
         } finally {
             // Limpa o contexto após a inicialização

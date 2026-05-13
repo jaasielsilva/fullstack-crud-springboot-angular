@@ -1,11 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { PlanoPublico } from '../../models/plano-public.model';
 import { AuthService } from '../../security/auth.service';
-import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-planos',
@@ -18,9 +17,13 @@ export class PlanosComponent implements OnInit {
   planos: PlanoPublico[] = [];
   carregandoLista = true;
   checkoutErro = '';
-  contratandoId: number | null = null;
+  /** Plano com checkout em andamento (até redirect ou erro). */
+  planoIdEmCheckout: number | null = null;
 
-  constructor(private http: HttpClient, private auth: AuthService) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly auth: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.http.get<PlanoPublico[]>(`${environment.apiUrl}/api/public/planos`).subscribe({
@@ -35,7 +38,7 @@ export class PlanosComponent implements OnInit {
     });
   }
 
-  assinar(planoId: number): void {
+  contratar(planoId: number): void {
     const empresaId = this.auth.getTenantId();
     if (!empresaId) {
       this.checkoutErro = 'Sessão inválida. Faça login novamente.';
@@ -43,44 +46,60 @@ export class PlanosComponent implements OnInit {
     }
 
     this.checkoutErro = '';
-    this.contratandoId = planoId;
+    this.planoIdEmCheckout = planoId;
+
+    const url = `${environment.apiUrl}/api/public/checkout/abacate`;
 
     this.http
-      .post<{ checkoutUrl: string; preferenceId: string }>(`${environment.apiUrl}/api/public/checkout`, {
-        empresaId,
-        planoId
-      })
+      .post<{
+        checkoutUrl?: string;
+        init_point?: string;
+      }>(url, { empresaId, planoId })
       .subscribe({
         next: (res) => {
-          if (res.checkoutUrl) {
-            window.location.href = res.checkoutUrl;
+          const destino = res.checkoutUrl ?? res.init_point;
+          if (!environment.production) {
+            console.log('[checkout abacate]', destino);
+          }
+          if (destino) {
+            window.location.href = destino;
           } else {
             this.checkoutErro = 'URL de checkout não retornada pelo servidor.';
-            this.contratandoId = null;
+            this.planoIdEmCheckout = null;
           }
         },
         error: (err: HttpErrorResponse) => {
-          this.contratandoId = null;
-          if (err.error?.erro) {
-            this.checkoutErro = err.error.erro;
-          } else {
-            this.checkoutErro = 'Não foi possível iniciar o checkout.';
-          }
+          this.planoIdEmCheckout = null;
+          this.checkoutErro =
+            typeof err.error?.erro === 'string' ? err.error.erro : 'Não foi possível iniciar o checkout.';
         }
       });
+  }
+
+  checkoutEmAndamento(planoId: number): boolean {
+    return this.planoIdEmCheckout === planoId;
   }
 
   formatMoney(v: number): string {
     return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  labelBotao(plano: PlanoPublico): string {
+  /** Texto curto do CTA principal do card. */
+  labelCta(plano: PlanoPublico): string {
+    const nome = (plano.nome ?? '').trim();
+    if (nome.length > 0) {
+      return `Contratar — ${nome}`;
+    }
     if (plano.tipo === 'BASICO') {
-      return 'Assinar Básico';
+      return 'Contratar — Plano Básico';
     }
     if (plano.tipo === 'PREMIUM') {
-      return 'Assinar Premium';
+      return 'Contratar — Plano Premium';
     }
-    return 'Assinar';
+    return 'Contratar plano';
+  }
+
+  trackByPlanoId(_index: number, plano: PlanoPublico): number {
+    return plano.id;
   }
 }

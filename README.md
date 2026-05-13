@@ -110,7 +110,7 @@ npm install
 ng serve
 ```
 
-App: `http://localhost:4200`
+Após `ng serve`, o front costuma ser `http://localhost:4200`. A API já inclui essa origem (e `127.0.0.1:4200`) no CORS padrão; só use `APP_CORS_ALLOWED_ORIGINS` se precisar de outra URL.
 
 ---
 

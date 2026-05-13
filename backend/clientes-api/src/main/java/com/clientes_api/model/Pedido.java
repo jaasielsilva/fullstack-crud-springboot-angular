@@ -38,6 +38,12 @@ public class Pedido extends AuditModel {
 
     private Double valorTotal;
 
+    /** Preenchido quando o pagamento é confirmado (webhook ou simulação manual). */
+    private LocalDateTime dataPagamento;
+
+    /** Última preferência Mercado Pago gerada para este pedido (checkout). */
+    private String mercadoPagoPreferenceId;
+
     @OneToMany(
         mappedBy = "pedido",
         cascade = CascadeType.ALL,
