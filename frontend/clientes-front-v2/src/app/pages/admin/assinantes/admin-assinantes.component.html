@@ -76,8 +76,15 @@
           class="btn-export-csv"
           [disabled]="exportandoCsv || carregando"
           (click)="exportarCsv()"
+          title="Planilha com colunas separadas (Excel)"
         >
-          {{ exportandoCsv ? 'Exportando…' : 'Exportar CSV' }}
+          <span class="btn-export-csv__inner">
+            <i class="bi bi-file-earmark-spreadsheet btn-export-csv__icon" aria-hidden="true"></i>
+            <span class="btn-export-csv__text">
+              <span class="btn-export-csv__line1">{{ exportandoCsv ? 'Gerando…' : 'Exportar planilha' }}</span>
+              <span class="btn-export-csv__line2" *ngIf="!exportandoCsv">Colunas prontas p/ Excel</span>
+            </span>
+          </span>
         </button>
       </div>
 

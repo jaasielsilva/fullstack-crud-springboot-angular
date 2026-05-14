@@ -9,11 +9,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Exportação CSV (UTF-8 com BOM) para o painel super admin.
+ * Exportação para Excel (pt-BR): UTF-8 com BOM, linha {@code sep=;} e campos separados por {@code ;}.
  */
 @Service
 public class AdminAssinantesExportService {
 
+    private static final char SEP = ';';
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private final AdminAssinantesRepository adminAssinantesRepository;
@@ -26,32 +27,50 @@ public class AdminAssinantesExportService {
         List<AssinanteAdminDTO> list = adminAssinantesRepository.buscarTodosAssinantes();
         StringBuilder sb = new StringBuilder();
         sb.append('\ufeff');
-        sb.append("empresa_id,nome_empresa,documento,email,status_empresa,plano_nome,status_assinatura,data_inicio,data_vencimento,dias_ate_vencimento_plano,ultimo_pagamento_status,valor_ultimo_pagamento,ultimo_pagamento_data\n");
+        sb.append("sep=").append(SEP).append('\n');
+        sb.append(String.join(String.valueOf(SEP),
+                "empresa_id",
+                "nome_empresa",
+                "documento",
+                "email",
+                "status_empresa",
+                "plano_nome",
+                "status_assinatura",
+                "data_inicio",
+                "data_vencimento",
+                "dias_ate_vencimento_plano",
+                "ultimo_pagamento_status",
+                "valor_ultimo_pagamento",
+                "ultimo_pagamento_data"
+        ));
+        sb.append('\n');
         for (AssinanteAdminDTO a : list) {
-            sb.append(a.getEmpresaId()).append(',');
-            sb.append(csv(a.getNomeEmpresa())).append(',');
-            sb.append(csv(a.getDocumento())).append(',');
-            sb.append(csv(a.getEmail())).append(',');
-            sb.append(csv(a.getStatusEmpresa() != null ? a.getStatusEmpresa().name() : "")).append(',');
-            sb.append(csv(a.getPlanoNome())).append(',');
-            sb.append(csv(a.getStatusAssinatura() != null ? a.getStatusAssinatura().name() : "")).append(',');
-            sb.append(csv(a.getDataInicio() != null ? ISO.format(a.getDataInicio()) : "")).append(',');
-            sb.append(csv(a.getDataVencimento() != null ? ISO.format(a.getDataVencimento()) : "")).append(',');
-            sb.append(a.getDiasAteVencimentoPlano() != null ? a.getDiasAteVencimentoPlano() : "").append(',');
-            sb.append(csv(a.getUltimoPagamentoStatus() != null ? a.getUltimoPagamentoStatus().name() : "")).append(',');
-            sb.append(a.getValorUltimoPagamento() != null ? a.getValorUltimoPagamento().toPlainString() : "").append(',');
-            sb.append(csv(a.getUltimoPagamentoData() != null ? ISO.format(a.getUltimoPagamentoData()) : ""));
+            sb.append(a.getEmpresaId()).append(SEP);
+            sb.append(campo(a.getNomeEmpresa())).append(SEP);
+            sb.append(campo(a.getDocumento())).append(SEP);
+            sb.append(campo(a.getEmail())).append(SEP);
+            sb.append(campo(a.getStatusEmpresa() != null ? a.getStatusEmpresa().name() : "")).append(SEP);
+            sb.append(campo(a.getPlanoNome())).append(SEP);
+            sb.append(campo(a.getStatusAssinatura() != null ? a.getStatusAssinatura().name() : "")).append(SEP);
+            sb.append(campo(a.getDataInicio() != null ? ISO.format(a.getDataInicio()) : "")).append(SEP);
+            sb.append(campo(a.getDataVencimento() != null ? ISO.format(a.getDataVencimento()) : "")).append(SEP);
+            sb.append(a.getDiasAteVencimentoPlano() != null ? a.getDiasAteVencimentoPlano() : "").append(SEP);
+            sb.append(campo(a.getUltimoPagamentoStatus() != null ? a.getUltimoPagamentoStatus().name() : "")).append(SEP);
+            sb.append(a.getValorUltimoPagamento() != null ? a.getValorUltimoPagamento().toPlainString().replace('.', ',') : "").append(SEP);
+            sb.append(campo(a.getUltimoPagamentoData() != null ? ISO.format(a.getUltimoPagamentoData()) : ""));
             sb.append('\n');
         }
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private static String csv(String raw) {
+    /** Campo texto: aspas se contiver separador, aspas ou quebra de linha (RFC-style para Excel). */
+    private static String campo(String raw) {
         if (raw == null) {
             return "";
         }
         String s = raw.replace("\r", " ").replace("\n", " ").trim();
-        if (s.contains(",") || s.contains("\"")) {
+        boolean precisaAspas = s.indexOf(SEP) >= 0 || s.indexOf('"') >= 0;
+        if (precisaAspas) {
             return "\"" + s.replace("\"", "\"\"") + "\"";
         }
         return s;
