@@ -3,12 +3,13 @@ export interface AssinanteAdmin {
   nomeEmpresa: string;
   documento: string;
   email: string;
-  statusEmpresa: string;
+  /** API pode enviar null em registros antigos ou sem assinatura. */
+  statusEmpresa: string | null;
   planoNome: string;
-  statusAssinatura: string;
+  statusAssinatura: string | null;
   dataInicio: string;
   dataVencimento: string;
-  ultimoPagamentoStatus: string;
+  ultimoPagamentoStatus: string | null;
   valorUltimoPagamento: number;
   ultimoPagamentoData: string;
   /** Dias até dataVencimento da última assinatura ATIVA; null se não aplicável. */

@@ -137,7 +137,7 @@ export class AdminAssinantesComponent implements OnInit {
         <p><strong>Documento:</strong> ${assinante.documento || 'Não informado'}</p>
         <p><strong>Email:</strong> ${assinante.email || 'Não informado'}</p>
         <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
-        <p><strong>Status Atual:</strong> ${assinante.statusEmpresa}</p>
+        <p><strong>Status Atual:</strong> ${assinante.statusEmpresa ?? 'N/A'}</p>
         <p><strong>Plano:</strong> ${assinante.planoNome || 'Sem Plano'}</p>
         <p><strong>Assinatura:</strong> ${assinante.statusAssinatura || 'N/A'}</p>
         <p><strong>Vencimento:</strong> ${assinante.dataVencimento ? new Date(assinante.dataVencimento).toLocaleDateString('pt-BR') : 'N/A'}</p>
