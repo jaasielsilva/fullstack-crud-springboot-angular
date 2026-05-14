@@ -32,7 +32,7 @@ cd /opt/erpcorporativo/hml
 docker compose up -d
 ```
 
-Aguarde o MySQL ficar **healthy**; a API e o web sobem em seguida. O schema/tabelas dependem do **`JPA_DDL_AUTO`** definido no `.env` / compose da API (ex.: `create` ou `update` na primeira subida).
+Aguarde o MySQL ficar **healthy**; a API e o web sobem em seguida. O schema/tabelas dependem do **`JPA_DDL_AUTO`** no `.env` / compose: use **`update`** (padrão do compose) para HML com dados persistentes; **`create`** apaga e recria tabelas a cada subida da API — só faz sentido para reset rápido de desenvolvimento.
 
 ## Referência rápida (copiar tudo)
 
