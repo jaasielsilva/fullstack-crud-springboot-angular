@@ -15,28 +15,28 @@
     <!-- Métricas / Dashboard -->
     <div class="metrics-grid" *ngIf="metricas">
       <div class="metric-card">
-        <div class="icon-bg text-blue"><i class="fa fa-users"></i></div>
+        <div class="icon-bg text-blue" aria-hidden="true"><i class="bi bi-people-fill"></i></div>
         <div class="metric-info">
           <h3>Total Ativos</h3>
           <h2>{{ metricas.totalAssinantesAtivos }}</h2>
         </div>
       </div>
       <div class="metric-card">
-        <div class="icon-bg text-green"><i class="fa fa-money"></i></div>
+        <div class="icon-bg text-green" aria-hidden="true"><i class="bi bi-currency-dollar"></i></div>
         <div class="metric-info">
           <h3>MRR Estimado</h3>
           <h2>{{ metricas.mrrEstimado | currency:'BRL':'symbol':'1.2-2' }}</h2>
         </div>
       </div>
       <div class="metric-card">
-        <div class="icon-bg text-yellow"><i class="fa fa-hourglass-half"></i></div>
+        <div class="icon-bg text-yellow" aria-hidden="true"><i class="bi bi-hourglass-split"></i></div>
         <div class="metric-info">
           <h3>Em Trial</h3>
           <h2>{{ metricas.empresasEmTrial }}</h2>
         </div>
       </div>
       <div class="metric-card">
-        <div class="icon-bg text-red"><i class="fa fa-exclamation-circle"></i></div>
+        <div class="icon-bg text-red" aria-hidden="true"><i class="bi bi-exclamation-octagon-fill"></i></div>
         <div class="metric-info">
           <h3>Pendências / Falhas</h3>
           <h2>{{ metricas.pagamentosPendentes }}</h2>

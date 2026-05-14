@@ -4,6 +4,10 @@
 # 2) Push no GHCR com tags :prod e :prod-<sha>
 # 3) SSH na VPS e atualiza o stack /opt/erpcorporativo/prod
 # 4) Notifica Telegram em cada etapa (start/success/failure)
+#
+# Cache Buildx: diretórios locais + actions/cache com chaves FIXAS
+# (buildx-prod-api / buildx-prod-web) — sem github.sha na chave.
+# Rotação cache-to → *-new → mv evita corrupção; save sobrescreve o artefato.
 # ============================================================
 name: Deploy PROD
 
@@ -25,6 +29,11 @@ env:
   IMAGE_API: ${{ github.repository_owner }}/erpcorporativo-api
   IMAGE_WEB: ${{ github.repository_owner }}/erpcorporativo-web
   TAG_ENV: prod
+  # Isolado de HML — nunca compartilhar paths/chaves com outro ambiente
+  BUILDX_CACHE_API: /tmp/.buildx-cache-prod-api
+  BUILDX_CACHE_API_NEW: /tmp/.buildx-cache-prod-api-new
+  BUILDX_CACHE_WEB: /tmp/.buildx-cache-prod-web
+  BUILDX_CACHE_WEB_NEW: /tmp/.buildx-cache-prod-web-new
 
 jobs:
   # ----------------------------------------------------------
@@ -58,6 +67,27 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Prepare Buildx local cache dirs
+        run: |
+          mkdir -p "${{ env.BUILDX_CACHE_API }}" "${{ env.BUILDX_CACHE_WEB }}"
+          rm -rf "${{ env.BUILDX_CACHE_API_NEW }}" "${{ env.BUILDX_CACHE_WEB_NEW }}"
+
+      - name: Restore Buildx cache (API, PROD)
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.BUILDX_CACHE_API }}
+          key: buildx-prod-api
+          restore-keys: |
+            buildx-prod-api-
+
+      - name: Restore Buildx cache (Web, PROD)
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.BUILDX_CACHE_WEB }}
+          key: buildx-prod-web
+          restore-keys: |
+            buildx-prod-web-
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -74,8 +104,25 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:${{ env.TAG_ENV }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_API }}:${{ env.TAG_ENV }}-${{ steps.meta.outputs.sha_short }}
-          cache-from: type=gha,scope=api-prod
-          cache-to: type=gha,scope=api-prod,mode=max
+          cache-from: type=local,src=${{ env.BUILDX_CACHE_API }}
+          cache-to: type=local,dest=${{ env.BUILDX_CACHE_API_NEW }},mode=max
+
+      - name: Rotate Buildx cache (API)
+        if: success()
+        run: |
+          rm -rf "${{ env.BUILDX_CACHE_API }}"
+          if [ -d "${{ env.BUILDX_CACHE_API_NEW }}" ]; then
+            mv "${{ env.BUILDX_CACHE_API_NEW }}" "${{ env.BUILDX_CACHE_API }}"
+          else
+            mkdir -p "${{ env.BUILDX_CACHE_API }}"
+          fi
+
+      - name: Save Buildx cache (API, PROD)
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.BUILDX_CACHE_API }}
+          key: buildx-prod-api
 
       - name: Build & push Web
         uses: docker/build-push-action@v6
@@ -88,8 +135,29 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:${{ env.TAG_ENV }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_WEB }}:${{ env.TAG_ENV }}-${{ steps.meta.outputs.sha_short }}
-          cache-from: type=gha,scope=web-prod
-          cache-to: type=gha,scope=web-prod,mode=max
+          cache-from: type=local,src=${{ env.BUILDX_CACHE_WEB }}
+          cache-to: type=local,dest=${{ env.BUILDX_CACHE_WEB_NEW }},mode=max
+
+      - name: Rotate Buildx cache (Web)
+        if: success()
+        run: |
+          rm -rf "${{ env.BUILDX_CACHE_WEB }}"
+          if [ -d "${{ env.BUILDX_CACHE_WEB_NEW }}" ]; then
+            mv "${{ env.BUILDX_CACHE_WEB_NEW }}" "${{ env.BUILDX_CACHE_WEB }}"
+          else
+            mkdir -p "${{ env.BUILDX_CACHE_WEB }}"
+          fi
+
+      - name: Save Buildx cache (Web, PROD)
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.BUILDX_CACHE_WEB }}
+          key: buildx-prod-web
+
+      - name: Prune BuildKit builder cache
+        if: always()
+        run: docker builder prune -af || true
 
   # ----------------------------------------------------------
   deploy:

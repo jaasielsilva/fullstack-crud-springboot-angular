@@ -48,10 +48,28 @@ public class AbacatePayApiService {
     }
 
     /**
-     * POST {@code /checkouts/create} — corpo e resposta conforme OpenAPI v2 ({@code data.url}, {@code data.id}).
+     * POST {@code /checkouts/create} — corpo e resposta conforme OpenAPI v2.
+     * <p>
+     * A API devolve o billing em {@code data}; este método devolve o nó {@code data}
+     * quando existir, para que {@code id} e {@code url} fiquem no nível esperado pelos serviços.
      */
     public JsonNode criarCheckout(ObjectNode payload) {
-        return postJson("/checkouts/create", payload, "checkout");
+        JsonNode root = postJson("/checkouts/create", payload, "checkout");
+        return desembrulharDataCheckout(root);
+    }
+
+    /**
+     * Respostas v2: {@code { "success": true, "data": { "id", "url", ... } }}.
+     */
+    static JsonNode desembrulharDataCheckout(JsonNode root) {
+        if (root == null || root.isNull() || !root.isObject()) {
+            return root;
+        }
+        JsonNode data = root.get("data");
+        if (data != null && data.isObject() && (data.has("url") || data.has("id"))) {
+            return data;
+        }
+        return root;
     }
 
     private JsonNode postJson(String path, ObjectNode payload, String recurso) {
@@ -84,10 +102,7 @@ public class AbacatePayApiService {
         } catch (RestClientResponseException e) {
             String errBody = safeBody(e);
             log.warn("Abacate Pay {} falhou: http={} body={}", path, e.getStatusCode().value(), trunc(errBody));
-            String hint = "";
-            if (e.getStatusCode().value() == 401) {
-                hint = " Verifique se a chave é da API v2 e se tem permissões (ex.: PRODUCT:CREATE, CHECKOUT:CREATE).";
-            }
+            String hint = hintParaErroHttp(path, e.getStatusCode().value(), errBody);
             throw new BusinessException("Erro ao chamar Abacate Pay (" + recurso + "): HTTP "
                     + e.getStatusCode().value()
                     + bodyParaMensagem(errBody)
@@ -102,6 +117,21 @@ public class AbacatePayApiService {
         } catch (Exception ignored) {
             return "";
         }
+    }
+
+    private static String hintParaErroHttp(String path, int status, String errBody) {
+        if (status == 401) {
+            return " Verifique se a chave é da API v2 e se tem permissões (ex.: PRODUCT:CREATE, CHECKOUT:CREATE).";
+        }
+        if (status == 400 && path.contains("checkouts")) {
+            String lower = errBody.toLowerCase();
+            if (lower.contains("product")) {
+                return " No painel Abacate Pay, crie dois produtos (ex.: \"Plano Básico\" R$ 29,90 e \"Plano Premium\" R$ 49,90/mês)"
+                        + " na mesma conta da sua API key, copie o ID público de cada um (ex.: prod_…)"
+                        + " e configure no servidor: ABACATEPAY_PRODUCT_ID_BASICO e ABACATEPAY_PRODUCT_ID_PREMIUM.";
+            }
+        }
+        return "";
     }
 
     private static String bodyParaMensagem(String body) {
