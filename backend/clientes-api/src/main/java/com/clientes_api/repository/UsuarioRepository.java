@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -30,5 +32,14 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Usuario findByResetToken(String resetToken);
 
+    @Query("SELECT u FROM Usuario u WHERE u.resetToken = :token AND u.resetTokenExpiry > :agora")
+    Optional<Usuario> findByResetTokenValido(@Param("token") String token, @Param("agora") LocalDateTime agora);
+
     Optional<Usuario> findFirstByTenantIdOrderByIdAsc(Long tenantId);
+
+    List<Usuario> findAllByTenantIdOrderByLoginAsc(Long tenantId);
+
+    Optional<Usuario> findByIdAndTenantId(Long id, Long tenantId);
+
+    boolean existsByLoginIgnoreCaseAndTenantId(String login, Long tenantId);
 }

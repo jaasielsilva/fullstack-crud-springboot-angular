@@ -14,8 +14,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+import org.hibernate.annotations.Filter;
+
 @Table(name = "usuarios")
 @Entity(name = "Usuario")
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Getter
 @Setter
 @NoArgsConstructor

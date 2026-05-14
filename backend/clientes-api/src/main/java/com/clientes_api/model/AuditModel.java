@@ -6,6 +6,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import lombok.Data;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 @Data
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
+@FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenantId", type = Long.class))
 public abstract class AuditModel {
 
     @CreatedDate
@@ -37,10 +40,9 @@ public abstract class AuditModel {
 
     /**
      * Coluna de isolamento multi-tenant.
-     * Gerenciado manualmente via @PrePersist + TenantContext.
-     * Não usa @TenantId do Hibernate para evitar conflito de validação de sessão
-     * ("assigned tenant id differs from current tenant id") e erro de boot
-     * ("no tenant identifier specified") quando TenantContext é null.
+     * Preenchimento em insert: {@link #setTenantIdOnCreate()} + {@link TenantContext}.
+     * Filtro global Hibernate {@code tenantFilter} (definido em {@link AuditModel}, anotado nas entidades)
+     * restringe leituras quando o tenant está no contexto e a transação JPA é aberta.
      */
     @Column(name = "tenant_id", nullable = false)
     private Long tenantId;

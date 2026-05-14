@@ -6,8 +6,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import org.hibernate.annotations.Filter;
 
 @Entity
+@Filter(name = "tenantFilter", condition = "tenant_id = :tenantId")
 @Data
 @Table(name = "produtos")
 public class Produto extends AuditModel {

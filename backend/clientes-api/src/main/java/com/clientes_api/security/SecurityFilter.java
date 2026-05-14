@@ -2,6 +2,7 @@ package com.clientes_api.security;
 
 import com.clientes_api.config.SecurityLoggingSupport;
 import com.clientes_api.config.TenantContext;
+import com.clientes_api.config.TenantSecurityLogger;
 import com.clientes_api.model.Usuario;
 import com.clientes_api.repository.UsuarioRepository;
 import jakarta.servlet.FilterChain;
@@ -33,6 +34,9 @@ public class SecurityFilter extends OncePerRequestFilter {
     @Autowired
     private SecurityLoggingSupport securityLoggingSupport;
 
+    @Autowired
+    private TenantSecurityLogger tenantSecurityLogger;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var token = this.recoverToken(request);
@@ -60,6 +64,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                         logger.info("AUTH-JWT | TenantContext após set (claim JWT) | tenantId={}", TenantContext.getCurrentTenant());
                     } else {
                         logger.warn("AUTH-JWT | JWT sem claim tenantId — Hibernate pode usar tenant 0 até materializar usuário | login={}", login);
+                        tenantSecurityLogger.logMissingTenantContext("jwt_sem_claim_tenantId|login=" + login);
                     }
 
                     Usuario usuario = usuarioRepository.findByLoginOrUsername(login, login);
@@ -81,6 +86,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                                     tenantIdUsuario,
                                     login
                             );
+                            tenantSecurityLogger.logCrossTenantAccessDenied(tenantFromToken, tenantIdUsuario, "jwt_vs_usuario");
                         } else {
                             UserDetails user = usuario;
                             var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

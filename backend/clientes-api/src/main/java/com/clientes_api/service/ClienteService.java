@@ -5,8 +5,11 @@ import java.util.List;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
+import com.clientes_api.config.TenantContext;
 import com.clientes_api.dto.ClienteRequestDTO;
 import com.clientes_api.dto.ClienteResponseDTO;
+import com.clientes_api.exception.BusinessException;
+import com.clientes_api.exception.ResourceNotFoundException;
 import com.clientes_api.model.Cliente;
 import com.clientes_api.repository.ClienteRepository;
 
@@ -20,7 +23,8 @@ public class ClienteService {
     }
 
     public List<ClienteResponseDTO> listarTodos() {
-        return clienteRepository.findAll()
+        long tenantId = TenantContext.requireTenantId();
+        return clienteRepository.findAllByTenantId(tenantId)
                 .stream()
                 .map(ClienteResponseDTO::from)
                 .toList();
@@ -32,8 +36,9 @@ public class ClienteService {
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public ClienteResponseDTO salvar(ClienteRequestDTO dto) {
-        clienteRepository.findFirstByEmail(dto.getEmail()).ifPresent(c -> {
-            throw new RuntimeException("Já existe um cliente cadastrado com esse email");
+        long tenantId = TenantContext.requireTenantId();
+        clienteRepository.findFirstByEmailAndTenantId(dto.getEmail(), tenantId).ifPresent(c -> {
+            throw new BusinessException("Já existe um cliente cadastrado com esse email");
         });
 
         Cliente cliente = new Cliente();
@@ -47,11 +52,14 @@ public class ClienteService {
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public ClienteResponseDTO atualizar(Long id, ClienteRequestDTO dto) {
+        long tenantId = TenantContext.requireTenantId();
         Cliente cliente = encontrar(id);
 
         if (!cliente.getEmail().equals(dto.getEmail())) {
-            clienteRepository.findFirstByEmail(dto.getEmail()).ifPresent(c -> {
-                throw new RuntimeException("Já existe um cliente cadastrado com esse email");
+            clienteRepository.findFirstByEmailAndTenantId(dto.getEmail(), tenantId).ifPresent(c -> {
+                if (!c.getId().equals(id)) {
+                    throw new BusinessException("Já existe um cliente cadastrado com esse email");
+                }
             });
         }
 
@@ -69,7 +77,8 @@ public class ClienteService {
     }
 
     private Cliente encontrar(Long id) {
-        return clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+        long tenantId = TenantContext.requireTenantId();
+        return clienteRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
     }
 }
