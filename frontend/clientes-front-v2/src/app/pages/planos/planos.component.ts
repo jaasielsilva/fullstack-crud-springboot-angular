@@ -48,7 +48,8 @@ export class PlanosComponent implements OnInit {
     this.checkoutErro = '';
     this.planoIdEmCheckout = planoId;
 
-    const url = `${environment.apiUrl}/api/public/checkout/abacate`;
+    // Abacate Pay (planos): POST .../api/public/checkout/abacate
+    const url = `${environment.apiUrl}/api/public/checkout`;
 
     this.http
       .post<{
@@ -59,7 +60,7 @@ export class PlanosComponent implements OnInit {
         next: (res) => {
           const destino = res.checkoutUrl ?? res.init_point;
           if (!environment.production) {
-            console.log('[checkout abacate]', destino);
+            console.log('[checkout mercado pago]', destino);
           }
           if (destino) {
             window.location.href = destino;

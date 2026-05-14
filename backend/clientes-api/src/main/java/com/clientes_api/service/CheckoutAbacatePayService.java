@@ -138,9 +138,8 @@ public class CheckoutAbacatePayService {
         root.put("returnUrl", frontendUrl + "/pagamento/falha");
         root.put("completionUrl", frontendUrl + "/pagamento/sucesso");
 
-        // Aceita PIX e cartão
+        // Produtos de assinatura na AbacatePay exigem cartão (API 400 se incluir PIX).
         ArrayNode methods = root.putArray("methods");
-        methods.add("PIX");
         methods.add("CARD");
 
         ObjectNode metadata = root.putObject("metadata");
