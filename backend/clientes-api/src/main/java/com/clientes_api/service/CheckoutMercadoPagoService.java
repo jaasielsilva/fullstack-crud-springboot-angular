@@ -41,6 +41,13 @@ public class CheckoutMercadoPagoService {
     @Value("${mercadopago.prefer-sandbox-init-point:false}")
     private boolean preferSandboxInitPoint;
 
+    /**
+     * Se true e {@code notification_url} ou {@code app.frontend-url} não forem HTTPS absoluto, omite
+     * notification_url, back_urls e auto_return (só máquina local; nunca com credencial de produção em HML).
+     */
+    @Value("${mercadopago.omit-callback-fields-without-https:false}")
+    private boolean omitCallbackFieldsWithoutHttps;
+
     public CheckoutMercadoPagoService(MercadoPagoApiService mercadoPagoApiService,
                                       EmpresaService empresaService,
                                       PlanoService planoService,
@@ -95,7 +102,7 @@ public class CheckoutMercadoPagoService {
         var response = mercadoPagoApiService.criarPreferencia(body);
 
         String prefId = response.path("id").asText(null);
-        String checkoutUrl = extrairInitPoint(response);
+        String checkoutUrl = MercadoPagoPreferenciaUtil.extrairInitPointPreferencia(response, preferSandboxInitPoint);
 
         if (checkoutUrl == null || checkoutUrl.isBlank()) {
             throw new BusinessException("Resposta do Mercado Pago sem URL de checkout (init_point).");
@@ -144,7 +151,23 @@ public class CheckoutMercadoPagoService {
         MercadoPagoPreferenciaUtil.preencherPayerTelefoneBrasil(payer, empresa.getTelefone());
 
         root.put("external_reference", externalReference);
-        root.put("notification_url", notificationUrl == null ? "" : notificationUrl.trim());
+
+        boolean incluirCallbacksHttps = !omitCallbackFieldsWithoutHttps
+                || (MercadoPagoPreferenciaUtil.urlAbsolutaHttps(notificationUrl)
+                && MercadoPagoPreferenciaUtil.urlAbsolutaHttps(frontendUrl));
+        if (incluirCallbacksHttps) {
+            root.put("notification_url", notificationUrl == null ? "" : notificationUrl.trim());
+
+            ObjectNode backUrls = root.putObject("back_urls");
+            backUrls.put("success", frontendUrl + "/pagamento/sucesso?gateway=mp");
+            backUrls.put("failure", frontendUrl + "/pagamento/falha");
+            backUrls.put("pending", frontendUrl + "/pagamento/pendente");
+
+            // auto_return só funciona com URLs públicas (não localhost)
+            if (!frontendUrl.contains("localhost") && !frontendUrl.contains("127.0.0.1")) {
+                root.put("auto_return", "approved");
+            }
+        }
 
         ObjectNode metadata = root.putObject("metadata");
         metadata.put("tipo", "assinatura");
@@ -152,28 +175,7 @@ public class CheckoutMercadoPagoService {
         metadata.put("plano_id", String.valueOf(plano.getId()));
         metadata.put("assinatura_id", String.valueOf(assinaturaId));
 
-        ObjectNode backUrls = root.putObject("back_urls");
-        backUrls.put("success", frontendUrl + "/pagamento/sucesso?gateway=mp");
-        backUrls.put("failure", frontendUrl + "/pagamento/falha");
-        backUrls.put("pending", frontendUrl + "/pagamento/pendente");
-
-        // auto_return só funciona com URLs públicas (não localhost)
-        if (!frontendUrl.contains("localhost") && !frontendUrl.contains("127.0.0.1")) {
-            root.put("auto_return", "approved");
-        }
-        MercadoPagoPreferenciaUtil.assertPreferenciaConformidade(root);
+        MercadoPagoPreferenciaUtil.assertPreferenciaConformidade(root, incluirCallbacksHttps);
         return root;
-    }
-
-    private String extrairInitPoint(com.fasterxml.jackson.databind.JsonNode response) {
-        String sandbox = response.path("sandbox_init_point").asText(null);
-        String prod = response.path("init_point").asText(null);
-        if (preferSandboxInitPoint && sandbox != null && !sandbox.isBlank()) {
-            return sandbox;
-        }
-        if (prod != null && !prod.isBlank()) {
-            return prod;
-        }
-        return sandbox;
     }
 }

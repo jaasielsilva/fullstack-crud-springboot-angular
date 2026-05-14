@@ -39,6 +39,9 @@ public class CheckoutPedidoMercadoPagoService {
     @Value("${mercadopago.prefer-sandbox-init-point:false}")
     private boolean preferSandboxInitPoint;
 
+    @Value("${mercadopago.omit-callback-fields-without-https:false}")
+    private boolean omitCallbackFieldsWithoutHttps;
+
     public CheckoutPedidoMercadoPagoService(MercadoPagoApiService mercadoPagoApiService,
                                             PedidoRepository pedidoRepository,
                                             ObjectMapper objectMapper,
@@ -68,7 +71,7 @@ public class CheckoutPedidoMercadoPagoService {
         var response = mercadoPagoApiService.criarPreferencia(body);
 
         String prefId = response.path("id").asText(null);
-        String checkoutUrl = extrairInitPoint(response);
+        String checkoutUrl = MercadoPagoPreferenciaUtil.extrairInitPointPreferencia(response, preferSandboxInitPoint);
 
         if (checkoutUrl == null || checkoutUrl.isBlank()) {
             throw new BusinessException("Resposta do Mercado Pago sem URL de checkout (init_point).");
@@ -116,34 +119,29 @@ public class CheckoutPedidoMercadoPagoService {
         MercadoPagoPreferenciaUtil.preencherPayerIdentificacaoBrasil(payer, empresa.getDocumento());
 
         root.put("external_reference", externalReference);
-        root.put("notification_url", notificationUrl == null ? "" : notificationUrl.trim());
+
+        boolean incluirCallbacksHttps = !omitCallbackFieldsWithoutHttps
+                || (MercadoPagoPreferenciaUtil.urlAbsolutaHttps(notificationUrl)
+                && MercadoPagoPreferenciaUtil.urlAbsolutaHttps(frontendUrl));
+        if (incluirCallbacksHttps) {
+            root.put("notification_url", notificationUrl == null ? "" : notificationUrl.trim());
+
+            ObjectNode backUrls = root.putObject("back_urls");
+            backUrls.put("success", frontendUrl + "/pedidos?mp=success");
+            backUrls.put("failure", frontendUrl + "/pedidos?mp=failure");
+            backUrls.put("pending", frontendUrl + "/pedidos?mp=pending");
+
+            if (!frontendUrl.contains("localhost") && !frontendUrl.contains("127.0.0.1")) {
+                root.put("auto_return", "approved");
+            }
+        }
 
         ObjectNode metadata = root.putObject("metadata");
         metadata.put("tipo", "pedido");
         metadata.put("tenant_id", String.valueOf(tenantId));
         metadata.put("pedido_id", String.valueOf(pedido.getId()));
 
-        ObjectNode backUrls = root.putObject("back_urls");
-        backUrls.put("success", frontendUrl + "/pedidos?mp=success");
-        backUrls.put("failure", frontendUrl + "/pedidos?mp=failure");
-        backUrls.put("pending", frontendUrl + "/pedidos?mp=pending");
-
-        if (!frontendUrl.contains("localhost") && !frontendUrl.contains("127.0.0.1")) {
-            root.put("auto_return", "approved");
-        }
-        MercadoPagoPreferenciaUtil.assertPreferenciaConformidade(root);
+        MercadoPagoPreferenciaUtil.assertPreferenciaConformidade(root, incluirCallbacksHttps);
         return root;
-    }
-
-    private String extrairInitPoint(com.fasterxml.jackson.databind.JsonNode response) {
-        String sandbox = response.path("sandbox_init_point").asText(null);
-        String prod = response.path("init_point").asText(null);
-        if (preferSandboxInitPoint && sandbox != null && !sandbox.isBlank()) {
-            return sandbox;
-        }
-        if (prod != null && !prod.isBlank()) {
-            return prod;
-        }
-        return sandbox;
     }
 }
