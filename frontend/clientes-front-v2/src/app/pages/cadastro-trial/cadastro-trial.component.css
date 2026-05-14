@@ -1,3 +1,13 @@
 .auth-shell {
   background: linear-gradient(160deg, #f8fafc 0%, #e9ecef 100%);
 }
+
+@media (max-width: 1199.98px) {
+  .auth-shell .card {
+    max-width: 420px !important;
+  }
+
+  .auth-shell .card-body {
+    padding: 1.35rem !important;
+  }
+}

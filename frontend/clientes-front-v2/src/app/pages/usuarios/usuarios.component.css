@@ -122,3 +122,34 @@
 .role-card.selected .role-card-check {
     opacity: 1;
 }
+
+@media (max-width: 1439.98px) {
+    .table thead th {
+        font-size: 0.7rem;
+    }
+
+    .table tbody td {
+        font-size: 0.82rem;
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .card {
+        border-radius: 12px;
+    }
+
+    .modal-content {
+        border-radius: 14px;
+    }
+
+    .role-card {
+        padding: 8px 12px;
+        border-radius: 10px;
+    }
+
+    .role-card-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.92rem;
+    }
+}

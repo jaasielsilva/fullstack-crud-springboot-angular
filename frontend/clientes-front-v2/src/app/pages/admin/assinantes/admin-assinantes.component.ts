@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdminAssinantesService } from '../../../services/admin-assinantes.service';
 import { AssinanteAdmin, AdminDashboardMetrics } from '../../../models/assinante-admin.model';
-import Swal from 'sweetalert2';
+import Swal, { SweetAlertResult } from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -94,7 +94,7 @@ export class AdminAssinantesComponent implements OnInit {
       cancelButtonColor: '#6b7280',
       confirmButtonText: `Sim, ${acaoTexto}!`,
       cancelButtonText: 'Cancelar'
-    }).then((result) => {
+    }).then((result: SweetAlertResult) => {
       if (result.isConfirmed) {
         this.adminAssinantesService.atualizarStatus(assinante.empresaId, novoStatus).subscribe({
           next: () => {

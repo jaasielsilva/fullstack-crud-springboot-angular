@@ -52,3 +52,14 @@
 .modal.show {
     display: block;
 }
+
+@media (max-width: 1439.98px) {
+    .premium-modal {
+        border-radius: 1.1rem;
+    }
+
+    .icon-container {
+        width: 64px;
+        height: 64px;
+    }
+}

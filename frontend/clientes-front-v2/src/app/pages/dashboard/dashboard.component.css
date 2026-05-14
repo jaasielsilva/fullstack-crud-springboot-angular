@@ -269,6 +269,61 @@
   border-color: #fca5a5 !important;
 }
 
+@media (max-width: 1399.98px) {
+  .dash-page {
+    margin: -0.35rem -0.55rem 0;
+    padding: 1rem 1rem 1.5rem;
+  }
+
+  .dash-title {
+    font-size: 1.45rem;
+  }
+
+  .dash-subtitle {
+    font-size: 0.88rem;
+  }
+
+  .kpi-card {
+    padding: 0.95rem 1rem;
+    border-radius: 11px;
+  }
+
+  .kpi-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+
+  .panel-card {
+    padding: 0.95rem 1rem 1.05rem;
+    border-radius: 11px;
+  }
+
+  .panel-title {
+    font-size: 0.98rem;
+  }
+
+  .chart-wrap,
+  .donut-wrap {
+    height: 240px;
+  }
+
+  .activity-list {
+    max-height: 300px;
+  }
+
+  .activity-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+
+  .activity-text {
+    font-size: 0.84rem;
+  }
+}
+
 @media (max-width: 767px) {
   .dash-page {
     margin: -0.25rem -0.5rem 0;

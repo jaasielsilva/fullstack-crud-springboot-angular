@@ -46,7 +46,7 @@
         <div class="icon-bg text-purple" aria-hidden="true"><i class="bi bi-calendar2-week"></i></div>
         <div class="metric-info">
           <h3>Renovar em ≤7 dias</h3>
-          <h2>{{ metricas.renovacaoUrgente7Dias ?? 0 }}</h2>
+          <h2>{{ metricas.renovacaoUrgente7Dias }}</h2>
         </div>
       </div>
     </div>
@@ -111,7 +111,7 @@
               <td>
                 <div class="plan-name">{{ ass.planoNome || 'Trial/Sem plano' }}</div>
                 <div class="subs-status">
-                  <span class="badge" [ngClass]="'badge-subs-' + (ass.statusAssinatura?.toLowerCase() || 'none')">
+                  <span class="badge" [ngClass]="'badge-subs-' + (ass.statusAssinatura.toLowerCase() || 'none')">
                     {{ ass.statusAssinatura || 'N/A' }}
                   </span>
                 </div>
@@ -130,7 +130,7 @@
               </td>
               <td>
                 <div class="payment-status">
-                  <span class="dot" [ngClass]="'dot-' + (ass.ultimoPagamentoStatus?.toLowerCase() || 'none')"></span>
+                  <span class="dot" [ngClass]="'dot-' + (ass.ultimoPagamentoStatus.toLowerCase() || 'none')"></span>
                   {{ ass.ultimoPagamentoStatus || 'Nenhum' }}
                 </div>
                 <div class="payment-date" *ngIf="ass.ultimoPagamentoData">
