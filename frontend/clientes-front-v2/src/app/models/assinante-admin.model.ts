@@ -11,6 +11,8 @@ export interface AssinanteAdmin {
   ultimoPagamentoStatus: string;
   valorUltimoPagamento: number;
   ultimoPagamentoData: string;
+  /** Dias até dataVencimento da última assinatura ATIVA; null se não aplicável. */
+  diasAteVencimentoPlano?: number | null;
 }
 
 export interface AdminDashboardMetrics {
@@ -18,4 +20,6 @@ export interface AdminDashboardMetrics {
   mrrEstimado: number;
   empresasEmTrial: number;
   pagamentosPendentes: number;
+  /** Última assinatura ATIVA com vencimento entre hoje e +7 dias. */
+  renovacaoUrgente7Dias: number;
 }

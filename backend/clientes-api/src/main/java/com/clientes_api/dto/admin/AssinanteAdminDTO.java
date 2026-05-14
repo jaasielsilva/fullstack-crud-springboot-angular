@@ -20,7 +20,9 @@ public class AssinanteAdminDTO {
     private StatusAssinatura statusAssinatura;
     private LocalDateTime dataInicio;
     private LocalDateTime dataVencimento;
-    
+    /** Dias até {@code dataVencimento} (assinatura ATIVA); negativo se já vencido; null se não aplicável. */
+    private Integer diasAteVencimentoPlano;
+
     private StatusPagamento ultimoPagamentoStatus;
     private BigDecimal valorUltimoPagamento;
     private LocalDateTime ultimoPagamentoData;

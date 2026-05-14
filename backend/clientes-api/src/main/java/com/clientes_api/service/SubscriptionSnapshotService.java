@@ -96,11 +96,19 @@ public class SubscriptionSnapshotService {
                     if (d >= 0 && d <= 7) {
                         diasAteVencimento = d;
                         if (d == 0) {
-                            mensagemRenovacao = "Sua assinatura renova hoje.";
+                            mensagemRenovacao =
+                                    "Hoje é o último dia do período pago da sua mensalidade (30 dias após o pagamento). "
+                                            + "Renove em Planos. Sem renovação, sua conta será bloqueada.";
                         } else if (d == 1) {
-                            mensagemRenovacao = "Falta 1 dia para a renovação da sua assinatura.";
+                            mensagemRenovacao =
+                                    "Falta 1 dia para o fim do período pago da sua assinatura. Renove em Planos antes do vencimento. "
+                                            + "Sem renovação, sua conta será bloqueada.";
                         } else {
-                            mensagemRenovacao = "Faltam " + d + " dias para a renovação da sua assinatura.";
+                            mensagemRenovacao =
+                                    "Faltam "
+                                            + d
+                                            + " dias para o fim do período pago da sua assinatura (renovação da mensalidade). "
+                                            + "Renove em Planos antes de esgotar esse prazo; sem renovação, sua conta será bloqueada.";
                         }
                     }
                 }

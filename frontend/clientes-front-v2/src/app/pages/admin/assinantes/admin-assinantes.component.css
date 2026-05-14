@@ -89,6 +89,7 @@
 .text-green { background: #f0fdf4; color: #10b981; }
 .text-yellow { background: #fefce8; color: #eab308; }
 .text-red { background: #fef2f2; color: #ef4444; }
+.text-purple { background: #f5f3ff; color: #7c3aed; }
 
 .metric-info h3 {
   font-size: 0.875rem;
@@ -149,6 +150,23 @@
   outline: none;
   cursor: pointer;
   min-width: 200px;
+}
+
+.btn-export-csv {
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  background: #111827;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-export-csv:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .table-wrapper {

@@ -24,16 +24,21 @@ public class AdminAssinantesRepositoryImpl implements AdminAssinantesRepository 
     @Override
     public List<AssinanteAdminDTO> buscarTodosAssinantes() {
         String sql = """
-            SELECT 
-                t.id AS empresaId, 
-                t.nome AS nomeEmpresa, 
-                t.cnpj AS documento, 
-                t.email, 
+            SELECT
+                t.id AS empresaId,
+                t.nome AS nomeEmpresa,
+                t.cnpj AS documento,
+                t.email,
                 t.status AS statusEmpresa,
                 pl.nome AS planoNome,
                 a.status AS statusAssinatura,
                 a.data_inicio AS dataInicio,
                 a.data_fim AS dataVencimento,
+                CASE
+                    WHEN a.status = 'ATIVA' AND a.data_fim IS NOT NULL THEN
+                        TIMESTAMPDIFF(DAY, CURRENT_DATE, CAST(a.data_fim AS DATE))
+                    ELSE NULL
+                END AS diasAteVencimentoPlano,
                 p.status AS ultimoPagamentoStatus,
                 p.valor AS valorUltimoPagamento,
                 p.created_at AS ultimoPagamentoData
@@ -84,6 +89,15 @@ public class AdminAssinantesRepositoryImpl implements AdminAssinantesRepository 
             Timestamp ultimoPgData = rs.getTimestamp("ultimoPagamentoData");
             if (ultimoPgData != null) dto.setUltimoPagamentoData(ultimoPgData.toLocalDateTime());
 
+            Object diasObj = rs.getObject("diasAteVencimentoPlano");
+            if (diasObj == null) {
+                dto.setDiasAteVencimentoPlano(null);
+            } else if (diasObj instanceof Number n) {
+                dto.setDiasAteVencimentoPlano(n.intValue());
+            } else {
+                dto.setDiasAteVencimentoPlano(Integer.parseInt(diasObj.toString()));
+            }
+
             return dto;
         });
     }
@@ -101,14 +115,27 @@ public class AdminAssinantesRepositoryImpl implements AdminAssinantesRepository 
 
         // MRR Estimado (soma dos valores das assinaturas ativas - usando a tabela de planos ou pagamentos recentes aprovados)
         BigDecimal mrr = jdbcTemplate.queryForObject("""
-            SELECT SUM(pl.valor) FROM tenants t
+            SELECT COALESCE(SUM(pl.valor), 0) FROM tenants t
             JOIN assinaturas a ON a.tenant_id = t.id AND a.id = (
                 SELECT MAX(id) FROM assinaturas a2 WHERE a2.tenant_id = t.id
             )
             JOIN planos pl ON a.plano_id = pl.id
-            WHERE t.status = 'ATIVA' AND a.status = 'ACTIVE' AND t.id != 1
+            WHERE t.status = 'ATIVA' AND a.status = 'ATIVA' AND t.id != 1
         """, BigDecimal.class);
         metrics.setMrrEstimado(mrr != null ? mrr : BigDecimal.ZERO);
+
+        Long renovacao7 = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM tenants t
+            JOIN assinaturas a ON a.tenant_id = t.id AND a.id = (
+                SELECT MAX(id) FROM assinaturas a2 WHERE a2.tenant_id = t.id
+            )
+            WHERE t.id != 1
+              AND t.status = 'ATIVA'
+              AND a.status = 'ATIVA'
+              AND a.data_fim IS NOT NULL
+              AND TIMESTAMPDIFF(DAY, CURRENT_DATE, CAST(a.data_fim AS DATE)) BETWEEN 0 AND 7
+        """, Long.class);
+        metrics.setRenovacaoUrgente7Dias(renovacao7 != null ? renovacao7 : 0L);
 
         // Empresas em Trial
         Long trial = jdbcTemplate.queryForObject(

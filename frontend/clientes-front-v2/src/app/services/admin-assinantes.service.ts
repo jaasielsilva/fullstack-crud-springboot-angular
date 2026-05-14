@@ -23,4 +23,8 @@ export class AdminAssinantesService {
   atualizarStatus(empresaId: number, status: string): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${empresaId}/status`, { status });
   }
+
+  exportarCsv(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/export.csv`, { responseType: 'blob' });
+  }
 }

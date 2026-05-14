@@ -69,6 +69,7 @@ public class MercadoPagoWebhookController {
             if (logWebhookInbound) {
                 log.info("Mercado Pago webhook | processando paymentId={}", paymentId);
             }
+            String payloadPersistido = payloadParaPersistencia(rawBody);
             WebhookEvento evento = webhookEventoRepository
                     .findByTipoAndMercadoPagoId("payment", paymentId)
                     .orElseGet(() -> {
@@ -76,9 +77,10 @@ public class MercadoPagoWebhookController {
                         novo.setTipo("payment");
                         novo.setMercadoPagoId(paymentId);
                         novo.setProcessado(false);
+                        novo.setPayloadJson(payloadPersistido);
                         return webhookEventoRepository.save(novo);
                     });
-            evento.setPayloadJson(rawBody);
+            evento.setPayloadJson(payloadPersistido);
 
             try {
                 mercadoPagoWebhookService.processarPagamentoPorId(paymentId);
@@ -162,6 +164,14 @@ public class MercadoPagoWebhookController {
             // vazio
         }
         return Optional.empty();
+    }
+
+    /** {@code webhook_eventos.payload_json} é NOT NULL — corpo vazio vira JSON mínimo. */
+    private static String payloadParaPersistencia(String rawBody) {
+        if (rawBody == null || rawBody.isBlank()) {
+            return "{}";
+        }
+        return rawBody;
     }
 
     private static String previewBody(String rawBody) {

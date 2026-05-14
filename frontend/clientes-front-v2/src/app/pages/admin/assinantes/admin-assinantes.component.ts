@@ -19,6 +19,7 @@ export class AdminAssinantesComponent implements OnInit {
   carregando = true;
   termoBusca = '';
   filtroStatus = 'TODOS';
+  exportandoCsv = false;
 
   constructor(private adminAssinantesService: AdminAssinantesService) {}
 
@@ -60,10 +61,19 @@ export class AdminAssinantesComponent implements OnInit {
         (a.documento && a.documento.includes(this.termoBusca)) ||
         (a.email && a.email.toLowerCase().includes(this.termoBusca.toLowerCase()));
 
-      const atendeStatus = 
-        this.filtroStatus === 'TODOS' || 
+      const atendeStatus =
+        this.filtroStatus === 'TODOS' ||
         a.statusEmpresa === this.filtroStatus ||
-        (this.filtroStatus === 'INADIMPLENTES' && ['PENDING', 'REJECTED'].includes(a.ultimoPagamentoStatus));
+        (this.filtroStatus === 'INADIMPLENTES' &&
+          a.ultimoPagamentoStatus &&
+          ['PENDING', 'REJECTED'].includes(a.ultimoPagamentoStatus)) ||
+        (this.filtroStatus === 'RENOVACAO_7D' &&
+          a.statusAssinatura === 'ATIVA' &&
+          a.statusEmpresa === 'ATIVA' &&
+          a.diasAteVencimentoPlano !== null &&
+          a.diasAteVencimentoPlano !== undefined &&
+          a.diasAteVencimentoPlano >= 0 &&
+          a.diasAteVencimentoPlano <= 7);
 
       return atendeBusca && atendeStatus;
     });
@@ -100,6 +110,26 @@ export class AdminAssinantesComponent implements OnInit {
     });
   }
 
+  exportarCsv(): void {
+    this.exportandoCsv = true;
+    this.adminAssinantesService.exportarCsv().subscribe({
+      next: (blob) => {
+        this.exportandoCsv = false;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `assinantes-lexcrm-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.exportandoCsv = false;
+        console.error(err);
+        Swal.fire('Erro', 'Não foi possível exportar o CSV.', 'error');
+      }
+    });
+  }
+
   verDetalhes(assinante: AssinanteAdmin): void {
     const detalhesHTML = `
       <div style="text-align: left; font-size: 0.95rem; line-height: 1.6;">
@@ -111,6 +141,11 @@ export class AdminAssinantesComponent implements OnInit {
         <p><strong>Plano:</strong> ${assinante.planoNome || 'Sem Plano'}</p>
         <p><strong>Assinatura:</strong> ${assinante.statusAssinatura || 'N/A'}</p>
         <p><strong>Vencimento:</strong> ${assinante.dataVencimento ? new Date(assinante.dataVencimento).toLocaleDateString('pt-BR') : 'N/A'}</p>
+        <p><strong>Dias até vencimento (plano):</strong> ${
+          assinante.diasAteVencimentoPlano !== null && assinante.diasAteVencimentoPlano !== undefined
+            ? assinante.diasAteVencimentoPlano
+            : 'N/A'
+        }</p>
         <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
         <p><strong>Último Pagamento:</strong> ${assinante.ultimoPagamentoStatus || 'N/A'}</p>
         <p><strong>Valor:</strong> ${assinante.valorUltimoPagamento ? 'R$ ' + assinante.valorUltimoPagamento : 'N/A'}</p>

@@ -42,26 +42,43 @@
           <h2>{{ metricas.pagamentosPendentes }}</h2>
         </div>
       </div>
+      <div class="metric-card">
+        <div class="icon-bg text-purple" aria-hidden="true"><i class="bi bi-calendar2-week"></i></div>
+        <div class="metric-info">
+          <h3>Renovar em ≤7 dias</h3>
+          <h2>{{ metricas.renovacaoUrgente7Dias ?? 0 }}</h2>
+        </div>
+      </div>
     </div>
 
     <!-- Tabela e Filtros -->
     <div class="table-container">
       <div class="filters-row">
-        <input 
-          type="text" 
-          placeholder="Buscar por nome, documento ou email..." 
-          [(ngModel)]="termoBusca" 
+        <input
+          type="text"
+          placeholder="Buscar por nome, documento ou email..."
+          [(ngModel)]="termoBusca"
           (ngModelChange)="aplicarFiltros()"
           class="search-input"
-        >
-        
+        />
+
         <select [(ngModel)]="filtroStatus" (ngModelChange)="aplicarFiltros()" class="status-select">
           <option value="TODOS">Todos os Status</option>
           <option value="ATIVA">Apenas Ativas</option>
           <option value="TRIAL">Apenas Trial</option>
           <option value="BLOQUEADA">Bloqueadas</option>
           <option value="INADIMPLENTES">Inadimplentes (Pgto Pendente)</option>
+          <option value="RENOVACAO_7D">Renovação ≤7 dias (ativas)</option>
         </select>
+
+        <button
+          type="button"
+          class="btn-export-csv"
+          [disabled]="exportandoCsv || carregando"
+          (click)="exportarCsv()"
+        >
+          {{ exportandoCsv ? 'Exportando…' : 'Exportar CSV' }}
+        </button>
       </div>
 
       <div class="table-wrapper">
@@ -71,6 +88,7 @@
               <th>Empresa / Documento</th>
               <th>Contato</th>
               <th>Plano / Assinatura</th>
+              <th>Venc. plano</th>
               <th>Status Acesso</th>
               <th>Último Pgto</th>
               <th>Ações</th>
@@ -89,6 +107,13 @@
                   <span class="badge" [ngClass]="'badge-subs-' + (ass.statusAssinatura?.toLowerCase() || 'none')">
                     {{ ass.statusAssinatura || 'N/A' }}
                   </span>
+                </div>
+              </td>
+              <td>
+                <span *ngIf="ass.dataVencimento">{{ ass.dataVencimento | date:'shortDate' }}</span>
+                <span *ngIf="!ass.dataVencimento" class="text-muted">—</span>
+                <div class="small text-muted" *ngIf="ass.diasAteVencimentoPlano !== null && ass.diasAteVencimentoPlano !== undefined">
+                  {{ ass.diasAteVencimentoPlano === 0 ? 'Hoje' : (ass.diasAteVencimentoPlano + ' d') }}
                 </div>
               </td>
               <td>
@@ -119,7 +144,7 @@
               </td>
             </tr>
             <tr *ngIf="assinantesFiltrados.length === 0">
-              <td colspan="6" class="empty-state">
+              <td colspan="7" class="empty-state">
                 Nenhum assinante encontrado para os filtros atuais.
               </td>
             </tr>
