@@ -41,6 +41,8 @@ public class AssinaturaAtivacaoService {
             assinatura.setMercadoPagoPaymentId(mercadoPagoPaymentIdIfPresent);
         }
         empresa.setStatus(StatusEmpresa.ATIVA);
+        empresa.setTrialInicio(null);
+        empresa.setTrialFim(null);
     }
 
     /**

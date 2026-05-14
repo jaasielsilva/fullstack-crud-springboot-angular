@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AuthService } from '../../security/auth.service';
 
 @Component({
   selector: 'app-pagamento-sucesso',
@@ -36,9 +37,15 @@ export class PagamentoSucessoComponent implements OnInit {
   /** Retorno explícito do checkout Mercado Pago (`?gateway=mp`). Demais casos tratamos como Abacate Pay. */
   fluxoMercadoPago = false;
 
-  constructor(private readonly route: ActivatedRoute) {}
+  constructor(
+    private readonly route: ActivatedRoute,
+    private readonly auth: AuthService
+  ) {}
 
   ngOnInit(): void {
     this.fluxoMercadoPago = this.route.snapshot.queryParamMap.get('gateway') === 'mp';
+    if (this.fluxoMercadoPago) {
+      this.auth.refreshSubscriptionContext().subscribe({ error: () => {} });
+    }
   }
 }

@@ -15,9 +15,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
 /**
  * Webhook Mercado Pago — sempre responde 200 após persistir o evento bruto (evita reenvios infinitos).
  * Erros de processamento ficam na auditoria ({@link WebhookEvento}) e nos logs.
+ * <p>
+ * O mesmo {@code payment_id} pode receber várias notificações (ex.: {@code pending} e depois {@code approved}).
+ * Não se deve ignorar notificações posteriores só porque a primeira já foi persistida.
  */
 @Hidden
 @RestController
@@ -50,21 +57,15 @@ public class MercadoPagoWebhookController {
             log.info("Mercado Pago webhook | POST recebido | bodyLen={} | preview={}", len, previewBody(rawBody));
         }
         try {
-            MercadoPagoWebhookDTO dto = objectMapper.readValue(rawBody, MercadoPagoWebhookDTO.class);
-            if (dto.type() == null || !"payment".equalsIgnoreCase(dto.type())) {
+            String rawPaymentId = extrairPaymentId(rawBody);
+            if (rawPaymentId == null || rawPaymentId.isBlank()) {
                 if (logWebhookInbound) {
-                    log.info("Mercado Pago webhook | ignorado (só processamos type=payment) | type={}", dto.type());
-                }
-                return ResponseEntity.ok().build();
-            }
-            if (dto.data() == null || dto.data().id() == null || dto.data().id().isBlank()) {
-                if (logWebhookInbound) {
-                    log.info("Mercado Pago webhook | ignorado (payment sem data.id)");
+                    log.info("Mercado Pago webhook | ignorado (sem payment id) | preview={}", previewBody(rawBody));
                 }
                 return ResponseEntity.ok().build();
             }
 
-            String paymentId = dto.data().id().trim();
+            final String paymentId = rawPaymentId.trim();
             if (logWebhookInbound) {
                 log.info("Mercado Pago webhook | processando paymentId={}", paymentId);
             }
@@ -74,17 +75,10 @@ public class MercadoPagoWebhookController {
                         WebhookEvento novo = new WebhookEvento();
                         novo.setTipo("payment");
                         novo.setMercadoPagoId(paymentId);
-                        novo.setPayloadJson(rawBody);
                         novo.setProcessado(false);
                         return webhookEventoRepository.save(novo);
                     });
-
-            if (Boolean.TRUE.equals(evento.getProcessado())) {
-                if (logWebhookInbound) {
-                    log.info("Mercado Pago webhook | paymentId={} | já processado (idempotente)", paymentId);
-                }
-                return ResponseEntity.ok().build();
-            }
+            evento.setPayloadJson(rawBody);
 
             try {
                 mercadoPagoWebhookService.processarPagamentoPorId(paymentId);
@@ -104,6 +98,70 @@ public class MercadoPagoWebhookController {
             }
             return ResponseEntity.ok().build();
         }
+    }
+
+    /**
+     * JSON do webhook ({@code type}/{@code action} + {@code data.id}) ou corpo {@code application/x-www-form-urlencoded}
+     * ({@code topic=payment&id=...}) usado em notificações legadas.
+     */
+    private String extrairPaymentId(String rawBody) {
+        if (rawBody == null || rawBody.isBlank()) {
+            return null;
+        }
+        String trimmed = rawBody.trim();
+        if (trimmed.startsWith("{")) {
+            try {
+                MercadoPagoWebhookDTO dto = objectMapper.readValue(trimmed, MercadoPagoWebhookDTO.class);
+                if (!isNotificacaoDePagamento(dto)) {
+                    return null;
+                }
+                if (dto.data() == null || dto.data().id() == null || dto.data().id().isBlank()) {
+                    return null;
+                }
+                return dto.data().id().trim();
+            } catch (Exception e) {
+                log.debug("Mercado Pago webhook | JSON não parseado como notificação padrão: {}", e.getMessage());
+                return null;
+            }
+        }
+        return extrairPaymentIdFormUrlEncoded(trimmed).orElse(null);
+    }
+
+    private static boolean isNotificacaoDePagamento(MercadoPagoWebhookDTO dto) {
+        if (dto.type() != null && !dto.type().isBlank() && "payment".equalsIgnoreCase(dto.type().trim())) {
+            return true;
+        }
+        if (dto.action() != null && !dto.action().isBlank()) {
+            return dto.action().trim().toLowerCase().startsWith("payment.");
+        }
+        return false;
+    }
+
+    private static Optional<String> extrairPaymentIdFormUrlEncoded(String body) {
+        try {
+            String topic = null;
+            String id = null;
+            for (String part : body.split("&")) {
+                int eq = part.indexOf('=');
+                if (eq < 0) {
+                    continue;
+                }
+                String key = URLDecoder.decode(part.substring(0, eq), StandardCharsets.UTF_8).trim();
+                String val = URLDecoder.decode(part.substring(eq + 1), StandardCharsets.UTF_8).trim();
+                if ("topic".equalsIgnoreCase(key)) {
+                    topic = val;
+                }
+                if ("id".equalsIgnoreCase(key)) {
+                    id = val;
+                }
+            }
+            if ("payment".equalsIgnoreCase(topic) && id != null && !id.isBlank()) {
+                return Optional.of(id.trim());
+            }
+        } catch (Exception ignored) {
+            // vazio
+        }
+        return Optional.empty();
     }
 
     private static String previewBody(String rawBody) {
