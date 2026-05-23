@@ -40,19 +40,11 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ClienteRepository clienteRepository;
     private final ProdutoRepository produtoRepository;
-    private final CheckoutPedidoMercadoPagoService checkoutPedidoMercadoPagoService;
+    private final CheckoutPedidoAbacatePayService checkoutPedidoAbacatePayService;
     private final PagamentoService pagamentoService;
 
     @Value("${app.pedido-simular-pagamento:false}")
     private boolean pedidoSimularPagamentoEnabled;
-
-    private long requireTenantId() {
-        Long t = TenantContext.getCurrentTenant();
-        if (t == null || t == 0L) {
-            throw new BusinessException("Contexto de empresa não disponível.");
-        }
-        return t;
-    }
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public PedidoResponseDTO criarPedido(PedidoRequestDTO request) {
@@ -68,7 +60,7 @@ public class PedidoService {
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public PedidoResponseDTO atualizarPedido(Long id, PedidoRequestDTO request) {
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
         Pedido pedido = pedidoRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado."));
 
@@ -84,7 +76,7 @@ public class PedidoService {
     }
 
     public List<PedidoResponseDTO> listarPedidos() {
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
         return pedidoRepository.findAllByTenantIdOrderByDataPedidoDesc(tenantId)
                 .stream()
                 .map(this::converterParaResponse)
@@ -92,7 +84,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO buscarPorId(Long id) {
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
         Pedido pedido = pedidoRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado."));
 
@@ -101,7 +93,7 @@ public class PedidoService {
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public void deletarPedido(Long id) {
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
         Pedido pedido = pedidoRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado."));
 
@@ -114,12 +106,12 @@ public class PedidoService {
     }
 
     public CheckoutResponseDTO iniciarCheckoutPedido(Long id) {
-        return checkoutPedidoMercadoPagoService.criarCheckoutPedido(id, requireTenantId());
+        return checkoutPedidoAbacatePayService.criarCheckoutPedido(id, TenantContext.requireTenantId());
     }
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public PedidoResponseDTO marcarEntregue(Long id) {
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
         Pedido pedido = pedidoRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado."));
 
@@ -133,7 +125,7 @@ public class PedidoService {
 
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public PedidoResponseDTO cancelarPedido(Long id) {
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
         Pedido pedido = pedidoRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado."));
 
@@ -155,7 +147,7 @@ public class PedidoService {
             throw new BusinessException("Simulação de pagamento de pedido está desativada neste ambiente.");
         }
 
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
         Pedido pedido = pedidoRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido não encontrado."));
 
@@ -169,16 +161,17 @@ public class PedidoService {
     }
 
     /**
-     * Chamado pelo webhook do Mercado Pago após {@link TenantContext} já estar setado para o tenant do pedido.
+     * Chamado pelo webhook do Mercado Pago após {@link TenantContext} já estar
+     * setado para o tenant do pedido.
      */
     @CacheEvict(value = "dashboardExecutivo", allEntries = true)
     public void processarWebhookMercadoPagoPedido(long pedidoId,
-                                                  String mercadoPagoPaymentId,
-                                                  JsonNode payment,
-                                                  String rawPayment,
-                                                  String externalRef,
-                                                  StatusPagamento statusPagamento) {
-        long tenantId = requireTenantId();
+            String mercadoPagoPaymentId,
+            JsonNode payment,
+            String rawPayment,
+            String externalRef,
+            StatusPagamento statusPagamento) {
+        long tenantId = TenantContext.requireTenantId();
 
         Pedido pedido = pedidoRepository.findByIdAndTenantId(pedidoId, tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado para external_reference"));
@@ -211,15 +204,17 @@ public class PedidoService {
     }
 
     /**
-     * Com {@code orphanRemoval = true}, não substituir a coleção {@code pedido.itens} por uma nova lista:
-     * mutar a instância existente (clear + add) para o Hibernate remover órfãos corretamente.
+     * Com {@code orphanRemoval = true}, não substituir a coleção
+     * {@code pedido.itens} por uma nova lista:
+     * mutar a instância existente (clear + add) para o Hibernate remover órfãos
+     * corretamente.
      */
     private void preencherDadosPedido(Pedido pedido, PedidoRequestDTO request) {
         if (request.getItens() == null || request.getItens().isEmpty()) {
             throw new BusinessException("O pedido deve ter pelo menos um item.");
         }
 
-        long tenantId = requireTenantId();
+        long tenantId = TenantContext.requireTenantId();
 
         Cliente cliente = clienteRepository.findByIdAndTenantId(request.getClienteId(), tenantId)
                 .orElseThrow(() -> new BusinessException("Cliente não encontrado."));
@@ -248,7 +243,8 @@ public class PedidoService {
             int quantidadeSolicitada = itemRequest.getQuantidade();
             if (quantidadeSolicitada > estoqueAtual) {
                 throw new BusinessException(
-                        "Estoque insuficiente para o produto \"" + produto.getNome() + "\" (disponível: " + estoqueAtual + ").");
+                        "Estoque insuficiente para o produto \"" + produto.getNome() + "\" (disponível: " + estoqueAtual
+                                + ").");
             }
 
             produto.setQuantidade(estoqueAtual - quantidadeSolicitada);
@@ -299,17 +295,17 @@ public class PedidoService {
         List<ItemPedidoResponseDTO> itensResponse = pedido.getItens() == null
                 ? List.of()
                 : pedido.getItens()
-                .stream()
-                .map(item -> {
-                    ItemPedidoResponseDTO itemResponse = new ItemPedidoResponseDTO();
-                    itemResponse.setProdutoId(item.getProduto().getId());
-                    itemResponse.setProduto(item.getProduto().getNome());
-                    itemResponse.setQuantidade(item.getQuantidade());
-                    itemResponse.setValorUnitario(item.getValorUnitario());
-                    itemResponse.setSubtotal(item.getSubtotal());
-                    return itemResponse;
-                })
-                .toList();
+                        .stream()
+                        .map(item -> {
+                            ItemPedidoResponseDTO itemResponse = new ItemPedidoResponseDTO();
+                            itemResponse.setProdutoId(item.getProduto().getId());
+                            itemResponse.setProduto(item.getProduto().getNome());
+                            itemResponse.setQuantidade(item.getQuantidade());
+                            itemResponse.setValorUnitario(item.getValorUnitario());
+                            itemResponse.setSubtotal(item.getSubtotal());
+                            return itemResponse;
+                        })
+                        .toList();
 
         response.setItens(itensResponse);
 

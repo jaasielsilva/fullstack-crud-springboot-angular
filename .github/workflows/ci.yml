@@ -2,6 +2,9 @@
 # CI — roda em PRs e pushes para dev/main
 # Faz build + testes do backend e frontend SEM publicar imagens.
 # Deploy é feito pelos workflows deploy-hml/deploy-prod.
+#
+# Cache: setup-java (Maven) e setup-node (npm) — chaves baseadas em
+# hash de pom.xml / package-lock.json (não em github.sha). Sem Buildx aqui.
 # ============================================================
 name: CI
 

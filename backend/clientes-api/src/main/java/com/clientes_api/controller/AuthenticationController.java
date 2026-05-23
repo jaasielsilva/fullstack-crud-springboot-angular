@@ -30,7 +30,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 import java.util.Random;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Tag(name = "Autenticação", description = "Endpoints de login e recuperação de senha")
 @RestController
@@ -120,7 +119,7 @@ public class AuthenticationController {
         repository.save(usuario);
 
         try {
-            emailService.enviarEmailRecuperacao(usuario.getLogin(), token);
+            emailService.enviarEmailRecuperacao(usuario.getLogin(), token, usuario.getTenantId());
             return ResponseEntity.ok(Map.of("mensagem", "E-mail de recuperação enviado com sucesso!"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("erro", "Erro ao enviar e-mail: " + e.getMessage()));
@@ -130,11 +129,7 @@ public class AuthenticationController {
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordDTO data) {
         // Busca usuário pelo token e verifica se não expirou
-        List<Usuario> usuarios = repository.findAll(); // Simples para este exemplo, ideal seria um método no repo
-        Usuario usuario = usuarios.stream()
-                .filter(u -> data.token().equals(u.getResetToken()))
-                .filter(u -> u.getResetTokenExpiry() != null && u.getResetTokenExpiry().isAfter(LocalDateTime.now()))
-                .findFirst()
+        Usuario usuario = repository.findByResetTokenValido(data.token(), LocalDateTime.now())
                 .orElse(null);
 
         if (usuario == null) {

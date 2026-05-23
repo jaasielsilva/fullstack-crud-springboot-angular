@@ -178,3 +178,29 @@ h1 {
 .btn-warning:active {
   transform: translateY(1px);
 }
+
+@media (max-width: 1439.98px) {
+  .access-denied {
+    padding: 16px;
+  }
+
+  .access-denied .card {
+    max-width: 480px;
+    padding: 28px 24px;
+    border-radius: 14px;
+  }
+
+  .access-denied .icon {
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .access-denied h1 {
+    font-size: 22px;
+  }
+
+  .access-denied .lead {
+    font-size: 14px;
+  }
+}

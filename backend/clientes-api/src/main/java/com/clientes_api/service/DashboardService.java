@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.clientes_api.dto.dashboard.DashboardExecutivoResponseDTO;
 import com.clientes_api.dto.dashboard.DashboardMetaConfigRequestDTO;
 import com.clientes_api.dto.dashboard.DashboardMetaConfigResponseDTO;
+import com.clientes_api.exception.BusinessException;
 import com.clientes_api.model.DashboardMetaConfig;
 import com.clientes_api.model.ItemPedido;
 import com.clientes_api.model.Pedido;
@@ -42,25 +43,25 @@ public class DashboardService {
     @Transactional(readOnly = true)
     @Cacheable(value = "dashboardExecutivo", key = "T(java.lang.String).format('%s|%s|%s|%s', #tenantId, #login, #role, #periodo)")
     public DashboardExecutivoResponseDTO montarResumoExecutivo(String periodo, Long tenantId, String login, String role) {
+        if (tenantId == null || tenantId <= 0) {
+            throw new BusinessException("Tenant inválido para o dashboard executivo.");
+        }
         Intervalo intervalo = calcularIntervalo(periodo);
         DashboardExecutivoResponseDTO dto = new DashboardExecutivoResponseDTO();
         dto.setPeriodo(periodo);
 
-        double metaReceita = resolverMetaReceita(login, role);
+        double metaReceita = resolverMetaReceita(tenantId, login, role);
         dto.setMetaReceita(metaReceita);
 
-        List<Pedido> todosPedidos = pedidoRepository.findAll();
+        List<Pedido> todosPedidos = pedidoRepository.findAllByTenantIdOrderByDataPedidoDesc(tenantId);
         List<Pedido> pedidosPeriodo = filtrarPedidosPorPeriodo(todosPedidos, intervalo.inicioAtual, intervalo.fimAtual);
         List<Pedido> pedidosAnterior = filtrarPedidosPorPeriodo(todosPedidos, intervalo.inicioAnterior, intervalo.inicioAtual.minusNanos(1));
 
-        dto.setTotalClientes((int) clienteRepository.count());
-        dto.setClientesAtivos((int) clienteRepository.findAll().stream().filter(c -> c.getAtivo() == null || c.getAtivo()).count());
-        dto.setTotalProdutos((int) produtoRepository.count());
-        dto.setProdutosAtivos((int) produtoRepository.findAll().stream().filter(p -> p.getAtivo() == null || p.getAtivo()).count());
-        dto.setProdutosBaixoEstoque((int) produtoRepository.findAll().stream().filter(p -> {
-            int qtd = p.getQuantidade() != null ? p.getQuantidade() : 0;
-            return qtd > 0 && qtd <= 10;
-        }).count());
+        dto.setTotalClientes((int) clienteRepository.countByTenantId(tenantId));
+        dto.setClientesAtivos((int) clienteRepository.countAtivosByTenantId(tenantId));
+        dto.setTotalProdutos((int) produtoRepository.countByTenantId(tenantId));
+        dto.setProdutosAtivos((int) produtoRepository.countAtivosByTenantId(tenantId));
+        dto.setProdutosBaixoEstoque((int) produtoRepository.countBaixoEstoqueByTenantId(tenantId));
 
         dto.setTotalPedidos(pedidosPeriodo.size());
         dto.setPedidosAbertos((int) pedidosPeriodo.stream().filter(p -> "ABERTO".equalsIgnoreCase(p.getStatus().name())).count());
@@ -92,13 +93,17 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardMetaConfigResponseDTO buscarMetaConfigurada() {
         Usuario usuario = usuarioLogado();
-        double meta = resolverMetaReceita(usuario.getLogin(), usuario.getRole().name());
+        Long tenantId = usuario.getTenantId();
+        if (tenantId == null || tenantId <= 0) {
+            throw new BusinessException("Tenant inválido para configuração de meta.");
+        }
+        double meta = resolverMetaReceita(tenantId, usuario.getLogin(), usuario.getRole().name());
 
-        DashboardMetaConfig cfgUser = metaConfigRepository.findFirstByLoginOrderByIdDesc(usuario.getLogin()).orElse(null);
+        DashboardMetaConfig cfgUser = metaConfigRepository.findFirstByTenantIdAndLoginOrderByIdDesc(tenantId, usuario.getLogin()).orElse(null);
         if (cfgUser != null) {
             return new DashboardMetaConfigResponseDTO("USER", usuario.getLogin(), cfgUser.getMetaReceita());
         }
-        DashboardMetaConfig cfgRole = metaConfigRepository.findFirstByRoleOrderByIdDesc(usuario.getRole().name()).orElse(null);
+        DashboardMetaConfig cfgRole = metaConfigRepository.findFirstByTenantIdAndRoleOrderByIdDesc(tenantId, usuario.getRole().name()).orElse(null);
         if (cfgRole != null) {
             return new DashboardMetaConfigResponseDTO("ROLE", usuario.getRole().name(), cfgRole.getMetaReceita());
         }
@@ -112,11 +117,15 @@ public class DashboardService {
             throw new RuntimeException("Meta de receita deve ser maior que zero");
         }
         Usuario usuario = usuarioLogado();
+        Long tenantId = usuario.getTenantId();
+        if (tenantId == null || tenantId <= 0) {
+            throw new BusinessException("Tenant inválido para configuração de meta.");
+        }
         String escopo = request.getEscopo() != null ? request.getEscopo().toUpperCase() : "USER";
 
         if ("ROLE".equals(escopo)) {
             String role = (request.getAlvo() == null || request.getAlvo().isBlank()) ? usuario.getRole().name() : request.getAlvo().toUpperCase();
-            DashboardMetaConfig cfg = metaConfigRepository.findFirstByLoginIsNullAndRoleOrderByIdDesc(role).orElse(new DashboardMetaConfig());
+            DashboardMetaConfig cfg = metaConfigRepository.findFirstByTenantIdAndLoginIsNullAndRoleOrderByIdDesc(tenantId, role).orElse(new DashboardMetaConfig());
             cfg.setLogin(null);
             cfg.setRole(role);
             cfg.setMetaReceita(request.getMetaReceita());
@@ -125,7 +134,7 @@ public class DashboardService {
         }
 
         if ("GLOBAL".equals(escopo)) {
-            DashboardMetaConfig cfg = metaConfigRepository.findFirstByLoginIsNullAndRoleIsNullOrderByIdDesc().orElse(new DashboardMetaConfig());
+            DashboardMetaConfig cfg = metaConfigRepository.findFirstByTenantIdAndLoginIsNullAndRoleIsNullOrderByIdDesc(tenantId).orElse(new DashboardMetaConfig());
             cfg.setLogin(null);
             cfg.setRole(null);
             cfg.setMetaReceita(request.getMetaReceita());
@@ -133,7 +142,7 @@ public class DashboardService {
             return new DashboardMetaConfigResponseDTO("GLOBAL", "TENANT", cfg.getMetaReceita());
         }
 
-        DashboardMetaConfig cfg = metaConfigRepository.findFirstByLoginOrderByIdDesc(usuario.getLogin()).orElse(new DashboardMetaConfig());
+        DashboardMetaConfig cfg = metaConfigRepository.findFirstByTenantIdAndLoginOrderByIdDesc(tenantId, usuario.getLogin()).orElse(new DashboardMetaConfig());
         cfg.setLogin(usuario.getLogin());
         cfg.setRole(null);
         cfg.setMetaReceita(request.getMetaReceita());
@@ -153,10 +162,10 @@ public class DashboardService {
         throw new RuntimeException("Usuário não autenticado");
     }
 
-    private double resolverMetaReceita(String login, String role) {
-        return metaConfigRepository.findFirstByLoginOrderByIdDesc(login).map(DashboardMetaConfig::getMetaReceita)
-                .or(() -> metaConfigRepository.findFirstByRoleOrderByIdDesc(role).map(DashboardMetaConfig::getMetaReceita))
-                .or(() -> metaConfigRepository.findFirstByLoginIsNullAndRoleIsNullOrderByIdDesc().map(DashboardMetaConfig::getMetaReceita))
+    private double resolverMetaReceita(Long tenantId, String login, String role) {
+        return metaConfigRepository.findFirstByTenantIdAndLoginOrderByIdDesc(tenantId, login).map(DashboardMetaConfig::getMetaReceita)
+                .or(() -> metaConfigRepository.findFirstByTenantIdAndRoleOrderByIdDesc(tenantId, role).map(DashboardMetaConfig::getMetaReceita))
+                .or(() -> metaConfigRepository.findFirstByTenantIdAndLoginIsNullAndRoleIsNullOrderByIdDesc(tenantId).map(DashboardMetaConfig::getMetaReceita))
                 .orElse(50000.0);
     }
 

@@ -6,7 +6,7 @@ export interface SubscriptionSnapshot {
   diasTrialRestantes?: number | null;
   pagamentoPendente: boolean;
   mensagemPagamentoPendente?: string | null;
-  /** Dias até o fim da assinatura ativa (alerta de renovação), quando enviado pelo backend. */
+  /** Dias até o fim do período pago da assinatura ativa (alerta nos últimos 7 dias dos 30 pós-pagamento). */
   diasAteVencimentoAssinatura?: number | null;
   mensagemRenovacaoAssinatura?: string | null;
   recursosLiberados: string[];

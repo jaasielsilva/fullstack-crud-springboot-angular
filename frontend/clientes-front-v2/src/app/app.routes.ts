@@ -16,8 +16,10 @@ import { PagamentoSucessoComponent } from './pages/pagamento/pagamento-sucesso.c
 import { PagamentoFalhaComponent } from './pages/pagamento/pagamento-falha.component';
 import { PagamentoPendenteComponent } from './pages/pagamento/pagamento-pendente.component';
 import { TrialExpiradoComponent } from './pages/trial-expirado/trial-expirado.component';
+import { AdminAssinantesComponent } from './pages/admin/assinantes/admin-assinantes.component';
 import { authGuard } from './security/auth.guard';
 import { subscriptionGuard } from './security/subscription.guard';
+import { adminGuard } from './security/admin.guard';
 
 const ROLES_DASHBOARD = ['ADMIN', 'GERENTE', 'VENDEDOR', 'SUPORTE'];
 
@@ -79,6 +81,17 @@ export const routes: Routes = [
     path: 'planos',
     component: PlanosComponent,
     canActivate: [authGuard, subscriptionGuard]
+  },
+  {
+    path: 'minha-assinatura',
+    component: PlanosComponent,
+    canActivate: [authGuard, subscriptionGuard],
+    data: { roles: ['ADMIN'] }
+  },
+  {
+    path: 'admin/assinantes',
+    component: AdminAssinantesComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
   },
   {
     path: 'pagamento/sucesso',

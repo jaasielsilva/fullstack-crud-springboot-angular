@@ -8,6 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface EmailConfigRepository extends JpaRepository<EmailConfig, Long> {
-    // Como só teremos uma configuração, pegamos a primeira disponível
-    Optional<EmailConfig> findFirstByOrderByIdAsc();
+    Optional<EmailConfig> findByTenantId(Long tenantId);
 }

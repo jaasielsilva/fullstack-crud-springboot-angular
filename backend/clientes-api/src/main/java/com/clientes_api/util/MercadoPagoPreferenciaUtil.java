@@ -26,11 +26,19 @@ public final class MercadoPagoPreferenciaUtil {
      * Campos mínimos exigidos/recomendados pelo Mercado Pago para conciliação, webhooks e índice de aprovação.
      */
     public static void assertPreferenciaConformidade(ObjectNode root) {
+        assertPreferenciaConformidade(root, true);
+    }
+
+    /**
+     * @param exigirNotificationUrl {@code false} apenas quando {@code mercadopago.omit-callback-fields-without-https}
+     *        omitiu webhooks/back_urls em ambiente local (nunca use com token de produção em deploy público).
+     */
+    public static void assertPreferenciaConformidade(ObjectNode root, boolean exigirNotificationUrl) {
         if (textTrimOrEmpty(root.path("external_reference")).isEmpty()) {
             throw new BusinessException(
                     "external_reference é obrigatório: use um código único para correlacionar payment_id com o registro interno.");
         }
-        if (textTrimOrEmpty(root.path("notification_url")).isEmpty()) {
+        if (exigirNotificationUrl && textTrimOrEmpty(root.path("notification_url")).isEmpty()) {
             throw new BusinessException(
                     "notification_url é obrigatório: configure mercadopago.notification-url com o endpoint HTTPS do webhook.");
         }
@@ -51,6 +59,39 @@ public final class MercadoPagoPreferenciaUtil {
         if (textTrimOrEmpty(item0.path("category_id")).isEmpty()) {
             throw new BusinessException("items[0].category_id é obrigatório (categoria do item).");
         }
+    }
+
+    /** URL absoluta com esquema {@code https} (exigência para preferência com webhooks em ambiente real). */
+    public static boolean urlAbsolutaHttps(String url) {
+        if (url == null) {
+            return false;
+        }
+        String t = url.trim();
+        return !t.isEmpty() && t.regionMatches(true, 0, "https://", 0, 8);
+    }
+
+    /**
+     * Escolhe a URL de checkout a partir da resposta {@code POST /checkout/preferences}.
+     * Com {@code preferSandboxInitPoint=false}, nunca usa {@code sandbox_init_point} (evita pagamento de teste com token de produção).
+     */
+    public static String extrairInitPointPreferencia(JsonNode response, boolean preferSandboxInitPoint) {
+        String sandbox = response.path("sandbox_init_point").asText(null);
+        String prod = response.path("init_point").asText(null);
+        if (preferSandboxInitPoint) {
+            if (sandbox != null && !sandbox.isBlank()) {
+                return sandbox;
+            }
+            if (prod != null && !prod.isBlank()) {
+                return prod;
+            }
+            return null;
+        }
+        if (prod != null && !prod.isBlank()) {
+            return prod;
+        }
+        throw new BusinessException(
+                "Mercado Pago retornou init_point vazio com prefer-sandbox-init-point=false (checkout de produção). "
+                        + "Não se usa sandbox_init_point neste modo. Confira o access token (produção vs teste) e a resposta da API.");
     }
 
     private static String textTrimOrEmpty(JsonNode n) {

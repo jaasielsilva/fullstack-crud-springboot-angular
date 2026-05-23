@@ -53,7 +53,7 @@ public class DataInitializer implements CommandLineRunner {
                 Plano basico = new Plano();
                 basico.setNome("Plano Básico");
                 basico.setDescricao("Clientes, Produtos, Usuários, Pedidos/Vendas e Dashboard básico.");
-                basico.setValor(new BigDecimal("59.90"));
+                basico.setValor(new BigDecimal("29.90"));
                 basico.setTipo(TipoPlano.BASICO);
                 basico.setAtivo(true);
                 basico.setRecursosLiberados("[\"CLIENTES\",\"PRODUTOS\",\"USUARIOS\",\"PEDIDOS\",\"DASHBOARD_BASICO\"]");
@@ -61,7 +61,7 @@ public class DataInitializer implements CommandLineRunner {
                 Plano premium = new Plano();
                 premium.setNome("Plano Premium");
                 premium.setDescricao("Dashboard completo, Financeiro, Pedidos/Vendas, Relatórios e Suporte prioritário.");
-                premium.setValor(new BigDecimal("99.90"));
+                premium.setValor(new BigDecimal("49.90"));
                 premium.setTipo(TipoPlano.PREMIUM);
                 premium.setAtivo(true);
                 premium.setRecursosLiberados("[\"CLIENTES\",\"PRODUTOS\",\"USUARIOS\",\"DASHBOARD_COMPLETO\",\"FINANCEIRO\",\"PEDIDOS\",\"RELATORIOS\",\"SUPORTE_PRIORITARIO\"]");
@@ -70,6 +70,7 @@ public class DataInitializer implements CommandLineRunner {
                 planoRepository.save(premium);
                 logger.info("[OK] Planos Básico e Premium criados no catálogo.");
             }
+            ajustarPrecosPlanosLegado();
 
             // Se não houver tenants, criamos um padrão
             Tenant defaultTenant;
@@ -118,5 +119,23 @@ public class DataInitializer implements CommandLineRunner {
             TenantContext.clear();
             logger.info("Processo de inicialização finalizado e contexto limpo.");
         }
+    }
+
+    /**
+     * Atualiza valores antigos do catálogo (59,90 / 99,90) para a nova tabela (29,90 / 49,90).
+     */
+    private void ajustarPrecosPlanosLegado() {
+        atualizarPrecoSeIgual(TipoPlano.BASICO, new BigDecimal("59.90"), new BigDecimal("29.90"));
+        atualizarPrecoSeIgual(TipoPlano.PREMIUM, new BigDecimal("99.90"), new BigDecimal("49.90"));
+    }
+
+    private void atualizarPrecoSeIgual(TipoPlano tipo, BigDecimal valorLegado, BigDecimal valorNovo) {
+        planoRepository.findByTipo(tipo).ifPresent(p -> {
+            if (valorLegado.compareTo(p.getValor()) == 0) {
+                p.setValor(valorNovo);
+                planoRepository.save(p);
+                logger.info("[OK] Valor do plano {} atualizado de {} para {}", tipo, valorLegado, valorNovo);
+            }
+        });
     }
 }

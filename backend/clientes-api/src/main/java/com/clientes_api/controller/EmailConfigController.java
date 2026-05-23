@@ -1,12 +1,16 @@
 package com.clientes_api.controller;
 
 import com.clientes_api.model.EmailConfig;
+import com.clientes_api.model.Usuario;
 import com.clientes_api.repository.EmailConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "Configurações", description = "Endpoints de configuração do sistema")
 @RestController
@@ -18,17 +22,21 @@ public class EmailConfigController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<EmailConfig> getConfig() {
-        return repository.findFirstByOrderByIdAsc()
+    public ResponseEntity<EmailConfig> getConfig(@AuthenticationPrincipal Usuario usuario) {
+        Long tenantId = obterTenantId(usuario);
+        return repository.findByTenantId(tenantId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<EmailConfig> saveConfig(@RequestBody EmailConfig data) {
-        EmailConfig config = repository.findFirstByOrderByIdAsc()
+    public ResponseEntity<EmailConfig> saveConfig(@AuthenticationPrincipal Usuario usuario,
+                                                  @RequestBody EmailConfig data) {
+        Long tenantId = obterTenantId(usuario);
+        EmailConfig config = repository.findByTenantId(tenantId)
                 .map(existing -> {
+                    existing.setTenantId(tenantId);
                     existing.setHost(data.getHost());
                     existing.setPort(data.getPort());
                     existing.setUsuario(data.getUsuario());
@@ -38,8 +46,19 @@ public class EmailConfigController {
                     existing.setStarttls(data.getStarttls());
                     return repository.save(existing);
                 })
-                .orElseGet(() -> repository.save(data));
+                .orElseGet(() -> {
+                    data.setId(null);
+                    data.setTenantId(tenantId);
+                    return repository.save(data);
+                });
         
         return ResponseEntity.ok(config);
+    }
+
+    private Long obterTenantId(Usuario usuario) {
+        if (usuario == null || usuario.getTenantId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Tenant do usuário autenticado não encontrado.");
+        }
+        return usuario.getTenantId();
     }
 }

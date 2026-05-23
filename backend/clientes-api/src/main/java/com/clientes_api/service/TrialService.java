@@ -24,13 +24,16 @@ public class TrialService {
     private final TenantRepository tenantRepository;
     private final AssinaturaRepository assinaturaRepository;
     private final EmpresaService empresaService;
+    private final AssinaturaService assinaturaService;
 
     public TrialService(TenantRepository tenantRepository,
                         AssinaturaRepository assinaturaRepository,
-                        EmpresaService empresaService) {
+                        EmpresaService empresaService,
+                        AssinaturaService assinaturaService) {
         this.tenantRepository = tenantRepository;
         this.assinaturaRepository = assinaturaRepository;
         this.empresaService = empresaService;
+        this.assinaturaService = assinaturaService;
     }
 
     @Scheduled(cron = "${app.trial.verification-cron}")
@@ -137,5 +140,57 @@ public class TrialService {
         }
 
         log.info("Finalizada verificação de trials expirados");
+    }
+
+    /**
+     * Empresas {@link StatusEmpresa#ATIVA} sem assinatura paga vigente e sem checkout {@link StatusAssinatura#PENDENTE}
+     * em andamento passam a {@link StatusEmpresa#BLOQUEADA} (período de 30 dias após o último pagamento esgotado).
+     */
+    @Scheduled(cron = "${app.trial.verification-cron}")
+    @Transactional
+    public void bloquearPorAssinaturaMensalVencida() {
+        LocalDateTime agora = LocalDateTime.now();
+        log.info("Iniciando verificação de assinaturas pagas vencidas (renovação) em {}", agora);
+
+        List<Tenant> empresasAtivas = tenantRepository.findByStatus(StatusEmpresa.ATIVA);
+        int bloqueadas = 0;
+        for (Tenant empresa : empresasAtivas) {
+            try {
+                if (empresaService.isMatriz(empresa.getId())) {
+                    continue;
+                }
+                if (assinaturaService.existeAssinaturaAtivaValida(empresa.getId(), agora)) {
+                    continue;
+                }
+                boolean temPendente = !assinaturaRepository
+                        .findByTenantIdAndStatus(empresa.getId(), StatusAssinatura.PENDENTE)
+                        .isEmpty();
+                if (temPendente) {
+                    continue;
+                }
+                empresa.setStatus(StatusEmpresa.BLOQUEADA);
+                tenantRepository.save(empresa);
+                for (Assinatura a : assinaturaRepository.findByTenantIdAndStatus(empresa.getId(), StatusAssinatura.ATIVA)) {
+                    if (a.getDataFim() != null && a.getDataFim().isBefore(agora)) {
+                        a.setStatus(StatusAssinatura.EXPIRADA);
+                        assinaturaRepository.save(a);
+                    }
+                }
+                bloqueadas++;
+                log.warn("Empresa ID={} bloqueada: período da mensalidade encerrado sem renovação", empresa.getId());
+            } catch (Exception ex) {
+                log.error(
+                        "Erro ao bloquear por vencimento de assinatura empresa ID={}: {}",
+                        empresa.getId(),
+                        ex.getMessage(),
+                        ex
+                );
+            }
+        }
+        log.info(
+                "Finalizada verificação de vencimento mensal | empresas ATIVAS={} | bloqueadas nesta execução={}",
+                empresasAtivas.size(),
+                bloqueadas
+        );
     }
 }

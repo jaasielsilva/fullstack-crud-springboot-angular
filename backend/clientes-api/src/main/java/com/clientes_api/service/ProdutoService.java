@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
+import com.clientes_api.config.TenantContext;
 import com.clientes_api.dto.ProdutoRequestDTO;
 import com.clientes_api.dto.ProdutoResponseDTO;
 import com.clientes_api.exception.ResourceNotFoundException;
@@ -21,7 +22,8 @@ public class ProdutoService {
     }
 
     public List<ProdutoResponseDTO> listarTodos() {
-        return produtoRepository.findAll()
+        long tenantId = TenantContext.requireTenantId();
+        return produtoRepository.findAllByTenantId(tenantId)
                 .stream()
                 .map(ProdutoResponseDTO::from)
                 .toList();
@@ -62,7 +64,8 @@ public class ProdutoService {
     }
 
     private Produto encontrar(Long id) {
-        return produtoRepository.findById(id)
+        long tenantId = TenantContext.requireTenantId();
+        return produtoRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado"));
     }
 }

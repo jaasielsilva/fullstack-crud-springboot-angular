@@ -42,6 +42,12 @@
               Empresas
             </a>
           </li>
+          <li class="nav-item" *ngIf="canAccessSuperAdmin()">
+            <a routerLink="/admin/assinantes" routerLinkActive="active" class="nav-link" style="color: #6366f1;">
+              <i class="bi bi-star-fill"></i>
+              Assinantes (SaaS)
+            </a>
+          </li>
           <li class="nav-item">
             <a routerLink="/produtos" routerLinkActive="active" class="nav-link">
               <i class="bi bi-box2"></i>
@@ -52,6 +58,12 @@
             <a routerLink="/pedidos" routerLinkActive="active" class="nav-link">
               <i class="bi bi-cart-check"></i>
               Pedidos
+            </a>
+          </li>
+          <li class="nav-item" *ngIf="canAccess(['ADMIN'])">
+            <a routerLink="/minha-assinatura" routerLinkActive="active" class="nav-link">
+              <i class="bi bi-card-checklist"></i>
+              Minha Assinatura
             </a>
           </li>
           <li class="nav-item" *ngIf="canAccess(['ADMIN'])">

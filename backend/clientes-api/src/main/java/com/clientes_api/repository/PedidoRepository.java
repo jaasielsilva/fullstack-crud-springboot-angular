@@ -9,6 +9,8 @@ import com.clientes_api.model.Pedido;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
+    List<Pedido> findAllByTenantId(Long tenantId);
+
     List<Pedido> findAllByTenantIdOrderByDataPedidoDesc(Long tenantId);
 
     Optional<Pedido> findByIdAndTenantId(Long id, Long tenantId);

@@ -78,3 +78,24 @@
 .btn-group .btn:hover {
   background: #f1f3f5;
 }
+
+@media (max-width: 1439.98px) {
+  .premium-card {
+    border-radius: 14px;
+  }
+
+  .form-control {
+    padding: 0.65rem 0.9rem;
+  }
+
+  .custom-table th {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .custom-table td {
+    padding: 0.65rem 0.45rem;
+    font-size: 0.9rem;
+  }
+}

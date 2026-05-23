@@ -40,3 +40,20 @@
 .input-group:focus-within .input-group-text {
   color: #0d6efd !important;
 }
+
+@media (max-width: 1199.98px) {
+  .login-wrapper {
+    padding: 14px;
+  }
+
+  .login-container {
+    padding: 28px 26px;
+    border-radius: 16px;
+    max-width: 400px;
+  }
+
+  .logo-circle {
+    width: 62px;
+    height: 62px;
+  }
+}

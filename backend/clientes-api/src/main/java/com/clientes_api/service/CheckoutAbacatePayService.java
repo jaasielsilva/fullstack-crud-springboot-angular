@@ -10,8 +10,6 @@ import com.clientes_api.model.Usuario;
 import com.clientes_api.model.enums.StatusAssinatura;
 import com.clientes_api.model.enums.StatusEmpresa;
 import com.clientes_api.model.enums.TipoPlano;
-import com.clientes_api.util.MercadoPagoExternalReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -19,12 +17,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 /**
- * Checkout de assinatura via Abacate Pay API <strong>v2</strong> (produto avulso + checkout hospedado).
- * Confirmação de pagamento: {@code POST /api/webhooks/abacatepay} ({@code checkout.completed} / {@code PAID}).
+ * Cria assinatura {@link StatusAssinatura#PENDENTE} e checkout na AbacatePay.
+ * <p>
+ * O produto na AbacatePay deve ser pré-cadastrado no dashboard e seu ID
+ * configurado via {@code abacatepay.product-id.<tipo>} (ex.:
+ * {@code abacatepay.product-id.basico}).
+ * O valor do plano é definido no produto cadastrado na AbacatePay — nunca
+ * exposto ao frontend.
  */
 @Service
 public class CheckoutAbacatePayService {
@@ -34,23 +34,26 @@ public class CheckoutAbacatePayService {
     private final PlanoService planoService;
     private final AssinaturaService assinaturaService;
     private final ObjectMapper objectMapper;
-    private final MercadoPagoValorPreferenciaService mercadoPagoValorPreferenciaService;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
+    @Value("${abacatepay.product-id.basico:}")
+    private String productIdBasico;
+
+    @Value("${abacatepay.product-id.premium:}")
+    private String productIdPremium;
+
     public CheckoutAbacatePayService(AbacatePayApiService abacatePayApiService,
-                                     EmpresaService empresaService,
-                                     PlanoService planoService,
-                                     AssinaturaService assinaturaService,
-                                     ObjectMapper objectMapper,
-                                     MercadoPagoValorPreferenciaService mercadoPagoValorPreferenciaService) {
+            EmpresaService empresaService,
+            PlanoService planoService,
+            AssinaturaService assinaturaService,
+            ObjectMapper objectMapper) {
         this.abacatePayApiService = abacatePayApiService;
         this.empresaService = empresaService;
         this.planoService = planoService;
         this.assinaturaService = assinaturaService;
         this.objectMapper = objectMapper;
-        this.mercadoPagoValorPreferenciaService = mercadoPagoValorPreferenciaService;
     }
 
     @Transactional
@@ -75,94 +78,73 @@ public class CheckoutAbacatePayService {
             throw new BusinessException("Tipo de plano não suportado para checkout.");
         }
 
+        String abacateProductId = resolverProductId(plano.getTipo());
+
+        // Cria assinatura PENDENTE antes de chamar a API de pagamento
         Assinatura assinatura = new Assinatura();
         assinatura.setTenantId(req.empresaId());
         assinatura.setPlano(plano);
         assinatura.setStatus(StatusAssinatura.PENDENTE);
         assinatura = assinaturaService.salvar(assinatura);
 
-        String externalReference = MercadoPagoExternalReference.format(
-                req.empresaId(),
-                plano.getId(),
-                assinatura.getId()
-        );
-        assinatura.setExternalReference(externalReference);
+        // externalId no formato compatível com o parser, adicionando sufixo para evitar conflito após reset do DB local
+        String externalId = "EMPRESA_" + req.empresaId()
+                + "_PLANO_" + plano.getId()
+                + "_ASSINATURA_" + assinatura.getId()
+                + "_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        assinatura.setExternalReference(externalId);
         assinatura = assinaturaService.salvar(assinatura);
 
-        long precoCentavos = resolverPrecoCentavos(plano);
+        ObjectNode body = montarCorpoCheckout(abacateProductId, externalId, empresa);
+        var data = abacatePayApiService.criarCheckout(body);
 
-        ObjectNode produtoBody = montarProdutoPlano(plano, externalReference, precoCentavos);
-        JsonNode produtoRoot = abacatePayApiService.criarProduto(produtoBody);
-        String productId = produtoRoot.path("data").path("id").asText(null);
-        if (productId == null || productId.isBlank()) {
-            throw new BusinessException("Abacate Pay não retornou o id público do produto (data.id).");
+        String checkoutId = data.path("id").asText(null);
+        String checkoutUrl = data.path("url").asText(null);
+
+        if (checkoutUrl == null || checkoutUrl.isBlank()) {
+            throw new BusinessException("AbacatePay não retornou URL de checkout.");
         }
 
-        ObjectNode checkoutBody = montarCheckout(productId, externalReference, empresa, plano, assinatura.getId());
-        JsonNode checkoutRoot = abacatePayApiService.criarCheckout(checkoutBody);
-        JsonNode data = checkoutRoot.path("data");
-        String url = data.path("url").asText(null);
-        String billingId = data.path("id").asText(null);
-        if (url == null || url.isBlank()) {
-            throw new BusinessException("Abacate Pay não retornou URL de pagamento (data.url).");
-        }
-
-        assinatura.setAbacatePayBillingId(billingId);
+        // Persiste o ID do checkout na assinatura para rastreamento
+        assinatura.setMercadoPagoPreferenceId(checkoutId); // campo reutilizado para o ID do checkout
         assinaturaService.salvar(assinatura);
 
-        return new CheckoutResponseDTO(url, billingId != null ? billingId : "");
+        return new CheckoutResponseDTO(checkoutUrl, checkoutId);
     }
 
-    private long resolverPrecoCentavos(Plano plano) {
-        BigDecimal precoReais = mercadoPagoValorPreferenciaService.resolverPrecoUnitario(plano.getValor());
-        long precoCentavos = precoReais.multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP).longValue();
-        if (precoCentavos < 100) {
-            precoCentavos = 100;
+    private String resolverProductId(TipoPlano tipo) {
+        String id = switch (tipo) {
+            case BASICO -> productIdBasico;
+            case PREMIUM -> productIdPremium;
+            default -> null;
+        };
+        if (id == null || id.isBlank()) {
+            throw new BusinessException(
+                    "Produto AbacatePay não configurado para o plano " + tipo.name()
+                            + ". Configure abacatepay.product-id." + tipo.name().toLowerCase());
         }
-        return precoCentavos;
+        return id;
     }
 
-    private ObjectNode montarProdutoPlano(Plano plano, String externalReference, long precoCentavos) {
+    private ObjectNode montarCorpoCheckout(String productId, String externalId, Tenant empresa) {
         ObjectNode root = objectMapper.createObjectNode();
-        root.put("externalId", externalReference);
-        root.put("name", plano.getNome() + " — ERP Corporativo");
-        root.put(
-                "description",
-                plano.getDescricao() != null && !plano.getDescricao().isBlank()
-                        ? plano.getDescricao()
-                        : "Assinatura mensal"
-        );
-        root.put("price", precoCentavos);
-        root.put("currency", "BRL");
-        return root;
-    }
 
-    private ObjectNode montarCheckout(
-            String productIdAbacate,
-            String externalReference,
-            Tenant empresa,
-            Plano plano,
-            long assinaturaId
-    ) {
-        ObjectNode root = objectMapper.createObjectNode();
         ArrayNode items = root.putArray("items");
         ObjectNode item = items.addObject();
-        item.put("id", productIdAbacate);
+        item.put("id", productId);
         item.put("quantity", 1);
 
+        root.put("externalId", externalId);
+        root.put("returnUrl", frontendUrl + "/pagamento/falha");
+        root.put("completionUrl", frontendUrl + "/pagamento/sucesso");
+
+        // Produtos de assinatura na AbacatePay exigem cartão (API 400 se incluir PIX).
         ArrayNode methods = root.putArray("methods");
-        methods.add("PIX");
         methods.add("CARD");
 
-        root.put("returnUrl", frontendUrl + "/planos");
-        root.put("completionUrl", frontendUrl + "/pagamento/sucesso");
-        root.put("externalId", externalReference);
-
         ObjectNode metadata = root.putObject("metadata");
-        metadata.put("empresa_id", String.valueOf(empresa.getId()));
-        metadata.put("plano_id", String.valueOf(plano.getId()));
-        metadata.put("assinatura_id", String.valueOf(assinaturaId));
-        metadata.put("gateway", "abacatepay");
+        metadata.put("tenant_id", empresa.getId());
+        metadata.put("empresa_nome", empresa.getNome());
 
         return root;
     }

@@ -13,6 +13,8 @@ public interface TenantRepository extends JpaRepository<Tenant, Long> {
 
     List<Tenant> findByStatusAndTrialFimBefore(StatusEmpresa status, LocalDateTime data);
 
+    List<Tenant> findByStatus(StatusEmpresa status);
+
     boolean existsByNomeIgnoreCase(String nome);
 
     boolean existsByEmailIgnoreCase(String email);
