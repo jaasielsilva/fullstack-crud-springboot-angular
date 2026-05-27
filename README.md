@@ -43,6 +43,7 @@ Versão do Spring Boot conforme [`backend/clientes-api/pom.xml`](backend/cliente
 | `/api/config/email` | Configuração de e-mail |
 | `/api/public` | Endpoints públicos (checkout, cadastro trial, etc.) |
 | `/api/webhooks` | Webhooks (ex.: Mercado Pago) |
+| `/api/gmud/changes` | GMUD — gestão de mudanças (super admin plataforma) |
 
 Detalhes e regras de negócio: arquivos em [`docs/`](docs/) e anotações OpenAPI nos controllers.
 
@@ -141,6 +142,8 @@ A aplicação roda em **containers**; em produção/homologação o **TLS** é t
 | [`docs/14-monitoramento.md`](docs/14-monitoramento.md) | Monitoramento e logs |
 | [`docs/19-trial-assinatura-mercadopago.md`](docs/19-trial-assinatura-mercadopago.md) | Trial, assinatura, Mercado Pago |
 | [`docs/09-docker-deploy.md`](docs/09-docker-deploy.md) | Docker e deploy |
+| [`docs/20-gmud-plano-implementacao.md`](docs/20-gmud-plano-implementacao.md) | Plano passo a passo — módulo GMUD / deploy |
+| [`docs/21-gmud-operacao.md`](docs/21-gmud-operacao.md) | GMUD — tokens, fluxo HML/PROD, rollback |
 | Demais arquivos | Produtos, pedidos, dashboard, usuários, financeiro, backup, VPS, etc. |
 
 ---

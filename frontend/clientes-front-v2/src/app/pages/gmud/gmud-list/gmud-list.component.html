@@ -1,0 +1,70 @@
+<div class="container-fluid dashboard-container">
+  <div class="d-flex align-items-end justify-content-between mb-3 border-bottom pb-2">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-arrow-repeat fs-4 text-primary"></i>
+      <h4 class="fw-bold text-dark mb-0">GMUD / Deploy</h4>
+    </div>
+    <a routerLink="/gmud/nova" class="btn btn-sm btn-primary rounded-pill fw-bold px-3 shadow-sm">
+      <i class="bi bi-plus-lg me-1"></i> Nova GMUD
+    </a>
+  </div>
+
+  <div class="card premium-card border-0 shadow-sm mb-3">
+    <div class="card-body d-flex flex-wrap gap-3 align-items-end">
+      <div>
+        <label class="form-label small text-muted mb-1">Status</label>
+        <select class="form-select form-select-sm" [(ngModel)]="filtroStatus" (change)="carregar()">
+          <option value="">Todos</option>
+          <option *ngFor="let s of statusOptions" [value]="s">{{ labelStatus(s) }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label small text-muted mb-1">Ambiente</label>
+        <select class="form-select form-select-sm" [(ngModel)]="filtroEnv" (change)="carregar()">
+          <option value="">Todos</option>
+          <option *ngFor="let e of envOptions" [value]="e">{{ e }}</option>
+        </select>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" (click)="carregar()">
+        <i class="bi bi-arrow-clockwise"></i> Atualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="card premium-card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div *ngIf="carregando" class="p-4 text-center text-muted">Carregando...</div>
+      <div *ngIf="!carregando && changes.length === 0" class="p-5 text-center text-muted">
+        Nenhuma GMUD encontrada.
+      </div>
+      <div class="table-responsive" *ngIf="!carregando && changes.length > 0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">ID</th>
+              <th>Título</th>
+              <th>Ambiente</th>
+              <th>Status</th>
+              <th>Versão</th>
+              <th>Criado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of changes">
+              <td class="ps-4 fw-bold">#{{ c.id }}</td>
+              <td>{{ c.title }}</td>
+              <td><span class="badge bg-light text-dark border">{{ c.environment }}</span></td>
+              <td><span class="badge rounded-pill" [ngClass]="badgeClass(c.status)">{{ labelStatus(c.status) }}</span></td>
+              <td class="small text-muted">{{ c.version || c.commitSha || '—' }}</td>
+              <td class="small">{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="text-end pe-4">
+                <a [routerLink]="['/gmud', c.id]" class="btn btn-sm btn-outline-primary rounded-pill">Detalhes</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

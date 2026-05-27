@@ -1,0 +1,92 @@
+<div class="container-fluid dashboard-container" *ngIf="!carregando && change">
+  <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
+    <a routerLink="/gmud" class="btn btn-sm btn-light"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold text-dark mb-0">GMUD #{{ change.id }}</h4>
+    <span class="badge rounded-pill ms-2" [ngClass]="badgeClass(change.status)">{{ change.status }}</span>
+  </div>
+
+  <div class="alert alert-success" *ngIf="sucesso">{{ sucesso }}</div>
+  <div class="alert alert-danger" *ngIf="erro">{{ erro }}</div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card premium-card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="fw-bold">{{ change.title }}</h5>
+          <p class="text-muted small mb-3">{{ change.description }}</p>
+          <dl class="row small mb-0">
+            <dt class="col-sm-4">Ambiente</dt>
+            <dd class="col-sm-8">{{ change.environment }}</dd>
+            <dt class="col-sm-4">Tipo / Risco</dt>
+            <dd class="col-sm-8">{{ change.type }} / {{ change.riskLevel }}</dd>
+            <dt class="col-sm-4">Criado por</dt>
+            <dd class="col-sm-8">{{ change.createdBy }}</dd>
+            <dt class="col-sm-4">Versão / SHA</dt>
+            <dd class="col-sm-8">{{ change.version || '—' }} / {{ change.commitSha || '—' }}</dd>
+            <dt class="col-sm-4">Artefato</dt>
+            <dd class="col-sm-8 text-break">{{ change.artifact || '—' }}</dd>
+            <dt class="col-sm-4">Pipeline</dt>
+            <dd class="col-sm-8">{{ change.pipelineRunId || '—' }}</dd>
+            <dt class="col-sm-4">Rollback plan</dt>
+            <dd class="col-sm-8">{{ change.rollbackPlan }}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="card premium-card border-0 shadow-sm mt-3">
+        <div class="card-header bg-transparent border-0">
+          <h6 class="fw-bold mb-0">Ações</h6>
+        </div>
+        <div class="card-body pt-0">
+          <textarea class="form-control form-control-sm mb-2" rows="2" placeholder="Comentário (opcional)"
+            [(ngModel)]="comentario"></textarea>
+          <div class="d-flex flex-wrap gap-2">
+            <button *ngIf="change.status === 'OPEN'" class="btn btn-sm btn-warning rounded-pill"
+              [disabled]="acaoEmAndamento" (click)="submeter()">Submeter para aprovação</button>
+            <button *ngIf="change.status === 'IN_APPROVAL'" class="btn btn-sm btn-info rounded-pill"
+              [disabled]="acaoEmAndamento" (click)="aprovar()">Aprovar</button>
+            <button *ngIf="change.status === 'APPROVED'" class="btn btn-sm btn-success rounded-pill"
+              [disabled]="acaoEmAndamento" (click)="implantar()">Registrar deploy</button>
+          </div>
+          <div *ngIf="change.status === 'DEPLOYED'" class="mt-3">
+            <label class="form-label small">Motivo do rollback *</label>
+            <textarea class="form-control form-control-sm mb-2" rows="2" [(ngModel)]="comentarioRollback"></textarea>
+            <button class="btn btn-sm btn-danger rounded-pill" [disabled]="acaoEmAndamento"
+              (click)="rollback()">Rollback</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card premium-card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0">
+          <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-1"></i> Histórico</h6>
+        </div>
+        <div class="card-body pt-0">
+          <div class="gmud-timeline" *ngIf="change.logs?.length; else semLogs">
+            <div class="gmud-timeline-item" *ngFor="let log of change.logs">
+              <div class="gmud-timeline-dot"></div>
+              <div class="gmud-timeline-content">
+                <div class="d-flex justify-content-between align-items-start">
+                  <span class="badge rounded-pill" [ngClass]="badgeClass(log.toStatus)">{{ log.toStatus }}</span>
+                  <small class="text-muted">{{ log.changedAt | date:'dd/MM HH:mm' }}</small>
+                </div>
+                <p class="small mb-1 text-muted">
+                  {{ log.fromStatus ? log.fromStatus + ' → ' : '' }}{{ log.toStatus }}
+                  · {{ log.changedBy }}
+                </p>
+                <p class="small mb-0" *ngIf="log.comment">{{ log.comment }}</p>
+              </div>
+            </div>
+          </div>
+          <ng-template #semLogs>
+            <p class="text-muted small mb-0">Sem registros de auditoria.</p>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="carregando" class="p-5 text-center text-muted">Carregando...</div>

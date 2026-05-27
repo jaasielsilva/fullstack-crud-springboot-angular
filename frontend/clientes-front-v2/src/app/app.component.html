@@ -48,6 +48,12 @@
               Assinantes (SaaS)
             </a>
           </li>
+          <li class="nav-item" *ngIf="canAccessSuperAdmin()">
+            <a routerLink="/gmud" routerLinkActive="active" class="nav-link">
+              <i class="bi bi-arrow-repeat"></i>
+              GMUD / Deploy
+            </a>
+          </li>
           <li class="nav-item">
             <a routerLink="/produtos" routerLinkActive="active" class="nav-link">
               <i class="bi bi-box2"></i>

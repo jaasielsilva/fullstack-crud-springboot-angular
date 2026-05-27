@@ -1,0 +1,30 @@
+.gmud-timeline {
+  position: relative;
+  padding-left: 1.25rem;
+  border-left: 2px solid #e9ecef;
+}
+
+.gmud-timeline-item {
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+
+.gmud-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.gmud-timeline-dot {
+  position: absolute;
+  left: -1.45rem;
+  top: 0.25rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6366f1;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.gmud-timeline-content {
+  padding-left: 0.5rem;
+}
