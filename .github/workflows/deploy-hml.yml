@@ -165,6 +165,8 @@ jobs:
       GMUD_API_URL: https://api.dev.erpcorporativo.shop
       GMUD_ENVIRONMENT: HML
     steps:
+      - uses: actions/checkout@v4
+
       - name: GMUD - deploy start
         id: gmud_start
         continue-on-error: true
