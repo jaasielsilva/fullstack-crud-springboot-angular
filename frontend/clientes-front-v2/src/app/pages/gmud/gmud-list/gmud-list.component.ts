@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { currentDeployTier } from '../../../shared/deploy-flow/deploy-flow.context';
+import { showPlatformEducationInUi } from '../../../shared/deploy-flow/platform-ops.context';
 import { GmudService } from '../../../services/gmud.service';
 import {
   ChangeRequest,
@@ -30,6 +31,7 @@ export class GmudListComponent implements OnInit {
   totalPages = 0;
 
   readonly appTier = currentDeployTier();
+  readonly showEducation = showPlatformEducationInUi();
   readonly hmlAppUrl = environment.hmlAppUrl;
   readonly prodAppUrl = environment.prodAppUrl;
 
