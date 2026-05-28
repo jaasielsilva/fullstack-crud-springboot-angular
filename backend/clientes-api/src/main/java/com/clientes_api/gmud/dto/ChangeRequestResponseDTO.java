@@ -29,6 +29,7 @@ public record ChangeRequestResponseDTO(
         String artifact,
         String pipelineRunId,
         String commitSha,
+        Long taskId,
         List<ChangeLogResponseDTO> logs
 ) {
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './security/auth.service';
@@ -11,9 +11,14 @@ import { TrialBannerComponent } from './shared/components/trial-banner/trial-ban
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   /** Telas sem sidebar (login, trial público, checkout/planos, retorno Mercado Pago). */
   minimalShell = false;
+
+  /** Menu lateral visível (persistido em localStorage). */
+  sidebarOpen = true;
+
+  private readonly sidebarStorageKey = 'lexcrm.sidebar.open';
 
   constructor(private router: Router, private authService: AuthService) {
     this.router.events.subscribe(event => {
@@ -28,6 +33,20 @@ export class AppComponent {
           url.startsWith('/trial-expirado');
       }
     });
+  }
+
+  ngOnInit(): void {
+    const saved = localStorage.getItem(this.sidebarStorageKey);
+    if (saved !== null) {
+      this.sidebarOpen = saved === 'true';
+      return;
+    }
+    this.sidebarOpen = window.matchMedia('(min-width: 992px)').matches;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    localStorage.setItem(this.sidebarStorageKey, String(this.sidebarOpen));
   }
 
   getUser(): any {

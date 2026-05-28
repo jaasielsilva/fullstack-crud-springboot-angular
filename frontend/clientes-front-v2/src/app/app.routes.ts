@@ -20,6 +20,9 @@ import { AdminAssinantesComponent } from './pages/admin/assinantes/admin-assinan
 import { GmudListComponent } from './pages/gmud/gmud-list/gmud-list.component';
 import { GmudFormComponent } from './pages/gmud/gmud-form/gmud-form.component';
 import { GmudDetailComponent } from './pages/gmud/gmud-detail/gmud-detail.component';
+import { TaskListComponent } from './pages/tarefas/task-list/task-list.component';
+import { TaskFormComponent } from './pages/tarefas/task-form/task-form.component';
+import { TaskDetailComponent } from './pages/tarefas/task-detail/task-detail.component';
 import { authGuard } from './security/auth.guard';
 import { subscriptionGuard } from './security/subscription.guard';
 import { adminGuard } from './security/admin.guard';
@@ -109,6 +112,21 @@ export const routes: Routes = [
   {
     path: 'gmud/:id',
     component: GmudDetailComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
+  },
+  {
+    path: 'tarefas',
+    component: TaskListComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
+  },
+  {
+    path: 'tarefas/nova',
+    component: TaskFormComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
+  },
+  {
+    path: 'tarefas/:id',
+    component: TaskDetailComponent,
     canActivate: [authGuard, subscriptionGuard, adminGuard]
   },
   {

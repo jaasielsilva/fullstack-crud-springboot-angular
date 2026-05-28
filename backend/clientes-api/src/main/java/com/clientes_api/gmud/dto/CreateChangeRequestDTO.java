@@ -17,6 +17,7 @@ public record CreateChangeRequestDTO(
         String impactDescription,
         String rollbackPlan,
         LocalDateTime deploymentWindowStart,
-        LocalDateTime deploymentWindowEnd
+        LocalDateTime deploymentWindowEnd,
+        Long taskId
 ) {
 }

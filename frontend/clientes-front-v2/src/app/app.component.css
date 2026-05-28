@@ -7,19 +7,48 @@
 
 /* Sidebar estilo Premium */
 .sidebar {
-  width: 240px; /* Reduzido de 280px para dar mais espaço à tela */
-  min-width: 240px; /* Reduzido de 280px */
-  flex-shrink: 0;   /* Impede o flexbox de encolher a sidebar */
-  background: #ffffff; /* Fundo branco puro */
+  width: 240px;
+  min-width: 240px;
+  flex-shrink: 0;
+  background: #ffffff;
   border-right: 1px solid #e9ecef;
   display: flex;
   flex-direction: column;
-  position: sticky; /* Fica fixo na tela ao rolar a página */
+  position: sticky;
   top: 0;
   height: 100vh;
   z-index: 1000;
-  transition: all 0.3s;
+  transition: width 0.25s ease, min-width 0.25s ease, transform 0.25s ease, opacity 0.2s ease;
   overflow: hidden;
+}
+
+.app-wrapper.sidebar-collapsed .sidebar {
+  width: 0;
+  min-width: 0;
+  border-right-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-toggle-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn i {
+  font-size: 1.15rem;
+}
+
+.topbar-search {
+  width: 250px;
+}
+
+.sidebar-backdrop {
+  display: none;
 }
 
 .sidebar-body {
@@ -161,7 +190,7 @@
     padding-right: 1rem !important;
   }
 
-  .topbar .input-group {
+  .topbar-search {
     width: min(220px, 28vw) !important;
   }
 }
@@ -189,16 +218,46 @@
 
 @media (max-width: 991.98px) {
   .app-wrapper {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .sidebar {
-    width: 100%;
-    min-width: 100%;
-    height: auto;
-    max-height: 38vh;
-    position: sticky;
+    position: fixed;
+    left: 0;
     top: 0;
+    width: min(280px, 88vw);
+    min-width: min(280px, 88vw);
+    height: 100vh;
+    max-height: none;
+    z-index: 1050;
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .app-wrapper.sidebar-collapsed .sidebar {
+    transform: translateX(-100%);
+    width: min(280px, 88vw);
+    min-width: min(280px, 88vw);
+    opacity: 1;
+    pointer-events: none;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(15, 23, 42, 0.45);
+    cursor: pointer;
+  }
+
+  .app-wrapper.sidebar-collapsed .sidebar-backdrop {
+    display: none;
   }
 
   .sidebar-header {
@@ -206,10 +265,14 @@
   }
 
   .sidebar-body {
-    max-height: calc(38vh - 110px);
+    max-height: none;
   }
 
   .sidebar-footer {
     padding: 0.75rem !important;
+  }
+
+  .topbar-search {
+    width: min(180px, 42vw) !important;
   }
 }

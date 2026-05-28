@@ -19,6 +19,7 @@ export class GmudService {
   listar(
     status?: ChangeStatus,
     environment?: DeployEnvironment,
+    taskId?: number,
     page = 0,
     size = 10
   ): Observable<PageResponse<ChangeRequest>> {
@@ -27,6 +28,7 @@ export class GmudService {
       .set('size', String(size));
     if (status) params = params.set('status', status);
     if (environment) params = params.set('environment', environment);
+    if (taskId != null) params = params.set('taskId', String(taskId));
     return this.http.get<PageResponse<ChangeRequest>>(this.apiUrl, { params });
   }
 

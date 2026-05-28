@@ -21,4 +21,6 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
             DeployEnvironment environment, ChangeStatus status, Pageable pageable);
 
     Optional<ChangeRequest> findByPipelineRunId(String pipelineRunId);
+
+    Page<ChangeRequest> findByTaskIdOrderByCreatedAtDesc(Long taskId, Pageable pageable);
 }

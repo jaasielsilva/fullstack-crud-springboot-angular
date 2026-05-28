@@ -38,6 +38,7 @@ final class ChangeRequestMapper {
                 entity.getArtifact(),
                 entity.getPipelineRunId(),
                 entity.getCommitSha(),
+                entity.getTaskId(),
                 logDtos
         );
     }
