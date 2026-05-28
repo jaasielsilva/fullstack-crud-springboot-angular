@@ -13,14 +13,14 @@
     <div class="card-body d-flex flex-wrap gap-3 align-items-end">
       <div>
         <label class="form-label small text-muted mb-1">Status</label>
-        <select class="form-select form-select-sm" [(ngModel)]="filtroStatus" (change)="carregar()">
+        <select class="form-select form-select-sm" [(ngModel)]="filtroStatus" (change)="onFiltroChange()">
           <option value="">Todos</option>
           <option *ngFor="let s of statusOptions" [value]="s">{{ labelStatus(s) }}</option>
         </select>
       </div>
       <div>
         <label class="form-label small text-muted mb-1">Ambiente</label>
-        <select class="form-select form-select-sm" [(ngModel)]="filtroEnv" (change)="carregar()">
+        <select class="form-select form-select-sm" [(ngModel)]="filtroEnv" (change)="onFiltroChange()">
           <option value="">Todos</option>
           <option *ngFor="let e of envOptions" [value]="e">{{ e }}</option>
         </select>
@@ -34,7 +34,7 @@
   <div class="card premium-card border-0 shadow-sm">
     <div class="card-body p-0">
       <div *ngIf="carregando" class="p-4 text-center text-muted">Carregando...</div>
-      <div *ngIf="!carregando && changes.length === 0" class="p-5 text-center text-muted">
+      <div *ngIf="!carregando && totalElements === 0" class="p-5 text-center text-muted">
         Nenhuma GMUD encontrada.
       </div>
       <div class="table-responsive" *ngIf="!carregando && changes.length > 0">
@@ -64,6 +64,22 @@
             </tr>
           </tbody>
         </table>
+      </div>
+      <div *ngIf="!carregando && totalElements > 0"
+        class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top px-4 py-3">
+        <span class="small text-muted">
+          Página {{ paginaExibicao }} de {{ totalPages }} · {{ totalElements }} registro(s)
+        </span>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
+            [disabled]="!temPaginaAnterior || carregando" (click)="paginaAnterior()">
+            <i class="bi bi-chevron-left"></i> Anterior
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
+            [disabled]="!temPaginaProxima || carregando" (click)="paginaProxima()">
+            Próximo <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>

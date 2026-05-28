@@ -26,7 +26,7 @@ Gestão de mudanças (ITIL básico) para rastrear deploys HML/PROD integrados ao
 1. Pipeline garante **tag semver + GitHub Release** no commit de `main` (cria automaticamente `vX.Y.Z` patch se não existir; tag manual no commit é respeitada).
 2. Pipeline chama `start` → GMUD fica em `IN_APPROVAL`.
 3. Super admin aprova na UI (`POST /api/gmud/changes/{id}/approve`) → `APPROVED`.
-4. O job de deploy só continua se a GMUD vier como `APPROVED`; caso contrário falha com aviso no Telegram.
+4. O pipeline **aguarda até 15 min** (polling a cada 30s) e só então faz deploy SSH; se expirar, falha com aviso no Telegram (re-run após aprovar).
 5. Pipeline `success` marca `DEPLOYED`.
 6. Falha de deploy → `failure` → `ROLLBACK`.
 

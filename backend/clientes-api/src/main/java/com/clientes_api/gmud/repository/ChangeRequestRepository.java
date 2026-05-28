@@ -3,19 +3,22 @@ package com.clientes_api.gmud.repository;
 import com.clientes_api.gmud.enums.ChangeStatus;
 import com.clientes_api.gmud.enums.DeployEnvironment;
 import com.clientes_api.gmud.model.ChangeRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Long> {
 
-    List<ChangeRequest> findByEnvironmentOrderByCreatedAtDesc(DeployEnvironment environment);
+    Page<ChangeRequest> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    List<ChangeRequest> findByStatusOrderByCreatedAtDesc(ChangeStatus status);
+    Page<ChangeRequest> findByEnvironmentOrderByCreatedAtDesc(DeployEnvironment environment, Pageable pageable);
 
-    List<ChangeRequest> findByEnvironmentAndStatusOrderByCreatedAtDesc(
-            DeployEnvironment environment, ChangeStatus status);
+    Page<ChangeRequest> findByStatusOrderByCreatedAtDesc(ChangeStatus status, Pageable pageable);
+
+    Page<ChangeRequest> findByEnvironmentAndStatusOrderByCreatedAtDesc(
+            DeployEnvironment environment, ChangeStatus status, Pageable pageable);
 
     Optional<ChangeRequest> findByPipelineRunId(String pipelineRunId);
 }

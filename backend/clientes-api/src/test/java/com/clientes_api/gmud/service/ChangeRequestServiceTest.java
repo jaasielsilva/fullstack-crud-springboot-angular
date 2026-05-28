@@ -28,7 +28,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,6 +67,21 @@ class ChangeRequestServiceTest {
         change.setRollbackPlan("Reverter tag Docker");
         change.setStatus(ChangeStatus.OPEN);
         change.setCreatedBy("admin@lexcrm.com.br");
+    }
+
+    @Test
+    void listar_retornaPaginaComMetadados() {
+        change.setCreatedAt(LocalDateTime.now());
+        when(changeRequestRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(change), Pageable.ofSize(10), 1));
+
+        var page = changeRequestService.listar(null, null, 0, 10);
+
+        assertThat(page.content()).hasSize(1);
+        assertThat(page.totalElements()).isEqualTo(1);
+        assertThat(page.totalPages()).isEqualTo(1);
+        assertThat(page.number()).isZero();
+        assertThat(page.size()).isEqualTo(10);
     }
 
     @Test
