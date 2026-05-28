@@ -33,6 +33,7 @@ export interface ChangeRequest {
   artifact: string | null;
   pipelineRunId: string | null;
   commitSha: string | null;
+  taskId: number | null;
   logs?: ChangeLog[];
 }
 
@@ -46,4 +47,5 @@ export interface CreateChangeRequest {
   rollbackPlan?: string;
   deploymentWindowStart?: string | null;
   deploymentWindowEnd?: string | null;
+  taskId?: number | null;
 }
