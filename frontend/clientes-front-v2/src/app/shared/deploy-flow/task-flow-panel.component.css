@@ -1,0 +1,50 @@
+.flow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flow-step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.flow-marker {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid var(--bs-border-color);
+  color: var(--bs-secondary);
+  background: var(--bs-body-bg);
+}
+
+.flow-step.done .flow-marker {
+  border-color: var(--bs-success);
+  background: var(--bs-success);
+  color: #fff;
+}
+
+.flow-step.current .flow-marker {
+  border-color: var(--bs-primary);
+  background: var(--bs-primary);
+  color: #fff;
+}
+
+.flow-step.current .flow-body {
+  background: rgba(var(--bs-primary-rgb), 0.06);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  margin: -0.35rem -0.5rem;
+}
+
+.flow-body {
+  flex: 1;
+  min-width: 0;
+}

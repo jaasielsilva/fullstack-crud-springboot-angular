@@ -2,12 +2,14 @@
 
 Módulo de **Tarefas** (super admin, `tenantId = 1`) para organizar o trabalho **antes** do deploy. A **GMUD** continua sendo o registro formal de mudança/deploy (ITIL).
 
+**Guia visual na aplicação:** menu **Fluxo de mudança** (`/fluxo-mudanca`) e painel no detalhe de cada tarefa.
+
 ## Fluxo recomendado
 
 1. **Nova tarefa** (`/tarefas/nova`) → status `OPEN`, branch sugerida `feature/TASK-{id}-{slug}`.
 2. **Iniciar** → `IN_PROGRESS` → criar branch e desenvolver em `dev`.
 3. Validar em **HML** (push `dev`).
-4. **Criar GMUD PROD** (botão na tarefa) → vincula `taskId` automaticamente.
+4. **Rascunho GMUD (HML)** (botão na tarefa) → planejamento com `taskId` no banco de HML (não é a GMUD que o pipeline de PROD aprova).
 5. PR `dev` → `main` → pipeline PROD (GMUD automática + aprovação).
 6. **Concluir tarefa** → `DONE`.
 

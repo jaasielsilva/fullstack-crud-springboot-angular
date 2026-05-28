@@ -1,0 +1,9 @@
+.accordion-button:not(.collapsed) {
+  background: rgba(var(--bs-primary-rgb), 0.08);
+  color: inherit;
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: var(--bs-border-color);
+}

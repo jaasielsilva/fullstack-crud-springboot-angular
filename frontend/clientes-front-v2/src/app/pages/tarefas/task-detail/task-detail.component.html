@@ -10,6 +10,8 @@
   <div *ngIf="erro" class="alert alert-danger py-2">{{ erro }}</div>
   <div *ngIf="sucesso" class="alert alert-success py-2">{{ sucesso }}</div>
 
+  <app-task-flow-panel *ngIf="task" [task]="task" [gmuds]="gmuds" class="d-block mb-3"></app-task-flow-panel>
+
   <div class="row g-3">
     <div class="col-lg-7">
       <div class="card premium-card border-0 shadow-sm">
@@ -32,7 +34,7 @@
           </button>
         </div>
         <div class="card-footer bg-transparent border-0 small text-muted">
-          Fluxo: criar branch → desenvolver em <code>dev</code> → validar HML → GMUD PROD → merge <code>main</code> → concluir tarefa.
+          <a routerLink="/fluxo-mudanca">Ver os 10 passos do fluxo</a> (HML → GitHub → PROD).
         </div>
       </div>
     </div>
@@ -51,8 +53,9 @@
             class="btn btn-sm btn-outline-danger rounded-pill" [disabled]="acaoEmAndamento"
             (click)="cancelar()">Cancelar</button>
           <a [routerLink]="['/gmud/nova']" [queryParams]="{ taskId: task.id, title: 'Tarefa #' + task.id + ' — ' + task.title }"
-            class="btn btn-sm btn-outline-primary rounded-pill">
-            Criar GMUD PROD
+            class="btn btn-sm btn-outline-primary rounded-pill"
+            title="Rascunho no banco de HML; a GMUD real de deploy é criada pelo pipeline em Produção">
+            Rascunho GMUD (HML)
           </a>
         </div>
       </div>

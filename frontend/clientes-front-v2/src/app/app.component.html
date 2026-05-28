@@ -57,6 +57,12 @@
             </a>
           </li>
           <li class="nav-item" *ngIf="canAccessSuperAdmin()">
+            <a routerLink="/fluxo-mudanca" routerLinkActive="active" class="nav-link">
+              <i class="bi bi-map"></i>
+              Fluxo de mudança
+            </a>
+          </li>
+          <li class="nav-item" *ngIf="canAccessSuperAdmin()">
             <a routerLink="/tarefas" routerLinkActive="active" class="nav-link">
               <i class="bi bi-kanban"></i>
               Tarefas
