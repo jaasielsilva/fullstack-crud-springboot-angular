@@ -9,6 +9,18 @@
     </a>
   </div>
 
+  <div class="alert border-0 shadow-sm mb-3 py-2" [class.alert-danger]="appTier === 'PROD'" [class.alert-info]="appTier === 'HML'">
+    <p class="small mb-1">
+      <strong>Você está em {{ appTier === 'PROD' ? 'Produção' : 'Homologação' }}.</strong>
+      Cada ambiente tem <strong>banco de dados próprio</strong> — GMUDs criadas em
+      <a [href]="hmlAppUrl + '/gmud'" target="_blank" rel="noopener">HML</a>
+      não aparecem aqui em PROD (e vice-versa).
+    </p>
+    <p class="small text-muted mb-0" *ngIf="totalElements > pageSize">
+      Há {{ totalElements }} registro(s); use <strong>Anterior</strong> / <strong>Próximo</strong> abaixo da tabela para ver todas.
+    </p>
+  </div>
+
   <div class="card premium-card border-0 shadow-sm mb-3">
     <div class="card-body d-flex flex-wrap gap-3 align-items-end">
       <div>
@@ -28,13 +40,17 @@
       <button class="btn btn-sm btn-outline-secondary" (click)="carregar()">
         <i class="bi bi-arrow-clockwise"></i> Atualizar
       </button>
+      <button type="button" class="btn btn-sm btn-link" (click)="filtroStatus = ''; filtroEnv = ''; onFiltroChange()">
+        Limpar filtros
+      </button>
     </div>
   </div>
 
   <div class="card premium-card border-0 shadow-sm">
     <div class="card-body p-0">
       <div *ngIf="carregando" class="p-4 text-center text-muted">Carregando...</div>
-      <div *ngIf="!carregando && totalElements === 0" class="p-5 text-center text-muted">
+      <div *ngIf="!carregando && erro" class="p-4 text-center text-danger small">{{ erro }}</div>
+      <div *ngIf="!carregando && !erro && totalElements === 0" class="p-5 text-center text-muted">
         Nenhuma GMUD encontrada.
       </div>
       <div class="table-responsive" *ngIf="!carregando && changes.length > 0">

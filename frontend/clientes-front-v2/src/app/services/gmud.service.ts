@@ -28,7 +28,7 @@ export class GmudService {
       .set('size', String(size));
     if (status) params = params.set('status', status);
     if (environment) params = params.set('environment', environment);
-    if (taskId != null) params = params.set('taskId', String(taskId));
+    if (taskId != null && taskId > 0) params = params.set('taskId', String(taskId));
     return this.http.get<PageResponse<ChangeRequest>>(this.apiUrl, { params });
   }
 

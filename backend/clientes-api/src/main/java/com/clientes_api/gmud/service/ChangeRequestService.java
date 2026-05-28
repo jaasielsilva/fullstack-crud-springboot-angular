@@ -57,7 +57,7 @@ public class ChangeRequestService {
         int safePage = Math.max(page, 0);
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        if (taskId != null) {
+        if (taskId != null && taskId > 0) {
             return PageResponseDTO.from(changeRequestRepository.findByTaskIdOrderByCreatedAtDesc(taskId, pageable)
                     .map(cr -> ChangeRequestMapper.toResponse(cr, List.of())));
         }

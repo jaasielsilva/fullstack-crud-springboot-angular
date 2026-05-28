@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { environment } from '../../../../environments/environment';
+import { currentDeployTier } from '../../../shared/deploy-flow/deploy-flow.context';
 import { GmudService } from '../../../services/gmud.service';
 import {
   ChangeRequest,
@@ -19,12 +21,17 @@ import {
 export class GmudListComponent implements OnInit {
   changes: ChangeRequest[] = [];
   carregando = false;
+  erro = '';
   filtroStatus: ChangeStatus | '' = '';
   filtroEnv: DeployEnvironment | '' = '';
   page = 0;
-  readonly pageSize = 10;
+  readonly pageSize = 20;
   totalElements = 0;
   totalPages = 0;
+
+  readonly appTier = currentDeployTier();
+  readonly hmlAppUrl = environment.hmlAppUrl;
+  readonly prodAppUrl = environment.prodAppUrl;
 
   readonly statusOptions: ChangeStatus[] = ['OPEN', 'IN_APPROVAL', 'APPROVED', 'DEPLOYED', 'ROLLBACK'];
   readonly envOptions: DeployEnvironment[] = ['DEV', 'HML', 'PROD'];
@@ -40,22 +47,28 @@ export class GmudListComponent implements OnInit {
       this.page = 0;
     }
     this.carregando = true;
+    this.erro = '';
     this.gmudService
       .listar(
         this.filtroStatus || undefined,
         this.filtroEnv || undefined,
+        undefined,
         this.page,
         this.pageSize
       )
       .subscribe({
         next: (data) => {
-          this.changes = data.content;
-          this.totalElements = data.totalElements;
-          this.totalPages = data.totalPages;
-          this.page = data.number;
+          this.changes = data.content ?? [];
+          this.totalElements = data.totalElements ?? 0;
+          this.totalPages = data.totalPages ?? 0;
+          this.page = data.number ?? 0;
           this.carregando = false;
         },
-        error: () => {
+        error: (err) => {
+          this.changes = [];
+          this.totalElements = 0;
+          this.totalPages = 0;
+          this.erro = err?.error?.erro || 'Não foi possível carregar as GMUDs.';
           this.carregando = false;
         }
       });
