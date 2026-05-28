@@ -1,5 +1,6 @@
 package com.clientes_api.gmud.service;
 
+import com.clientes_api.dto.PageResponseDTO;
 import com.clientes_api.exception.BusinessException;
 import com.clientes_api.exception.ResourceNotFoundException;
 import com.clientes_api.gmud.dto.ChangeRequestResponseDTO;
@@ -12,6 +13,10 @@ import com.clientes_api.gmud.model.ChangeRequest;
 import com.clientes_api.gmud.repository.ChangeLogRepository;
 import com.clientes_api.gmud.repository.ChangeRequestRepository;
 import com.clientes_api.gmud.support.SuperAdminSupport;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,24 +39,32 @@ public class ChangeRequestService {
         this.superAdminSupport = superAdminSupport;
     }
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @Transactional(readOnly = true)
-    public List<ChangeRequestResponseDTO> listar(ChangeStatus status, DeployEnvironment environment) {
+    public PageResponseDTO<ChangeRequestResponseDTO> listar(
+            ChangeStatus status,
+            DeployEnvironment environment,
+            int page,
+            int size) {
         superAdminSupport.assertSuperAdmin();
-        List<ChangeRequest> list;
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int safePage = Math.max(page, 0);
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<ChangeRequest> result;
         if (status != null && environment != null) {
-            list = changeRequestRepository.findByEnvironmentAndStatusOrderByCreatedAtDesc(environment, status);
+            result = changeRequestRepository.findByEnvironmentAndStatusOrderByCreatedAtDesc(
+                    environment, status, pageable);
         } else if (status != null) {
-            list = changeRequestRepository.findByStatusOrderByCreatedAtDesc(status);
+            result = changeRequestRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
         } else if (environment != null) {
-            list = changeRequestRepository.findByEnvironmentOrderByCreatedAtDesc(environment);
+            result = changeRequestRepository.findByEnvironmentOrderByCreatedAtDesc(environment, pageable);
         } else {
-            list = changeRequestRepository.findAll().stream()
-                    .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                    .toList();
+            result = changeRequestRepository.findAllByOrderByCreatedAtDesc(pageable);
         }
-        return list.stream()
-                .map(cr -> ChangeRequestMapper.toResponse(cr, List.of()))
-                .toList();
+
+        return PageResponseDTO.from(result.map(cr -> ChangeRequestMapper.toResponse(cr, List.of())));
     }
 
     @Transactional(readOnly = true)
