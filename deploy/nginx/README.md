@@ -14,6 +14,12 @@ Por isso **não usamos Traefik** aqui: os containers LexCRM expõem apenas **loo
 
 **Não conflita** com `lavarapido` em `:8080` / `:8081` / MySQL em `:3306` — são portas diferentes.
 
+## Blue/Green (preparação)
+
+Exemplo de configuração dual-upstream para troca sem downtime de proxy: [`blue-green-upstream.conf.example`](blue-green-upstream.conf.example).
+
+**Nesta entrega:** não alterar portas na VPS; deploy continua **rolling** via Docker Compose. Ver também [docs/20-gmud-plano-implementacao.md](../../docs/20-gmud-plano-implementacao.md) e [docs/21-gmud-operacao.md](../../docs/21-gmud-operacao.md).
+
 ## Instalar o site no Nginx
 
 ```bash

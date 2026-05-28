@@ -11,6 +11,8 @@ O projeto inclui **Dockerfiles**, **docker-compose** para homologação e produ�
 
 **Detalhes técnicos de infra**: [`deploy/README.md`](../deploy/README.md).
 
+**GMUD (gestão de mudanças / rastreio de deploy):** [20-gmud-plano-implementacao.md](20-gmud-plano-implementacao.md), [21-gmud-operacao.md](21-gmud-operacao.md). O deploy atual é **rolling** (`docker compose pull` + `up -d`); blue/green está documentado em `deploy/nginx/blue-green-upstream.conf.example` sem ativação em prod.
+
 ---
 
 ## Infraestrutura (visão original)

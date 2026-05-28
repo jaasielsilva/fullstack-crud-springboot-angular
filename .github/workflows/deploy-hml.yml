@@ -161,8 +161,56 @@ jobs:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     needs: build-and-push
+    env:
+      GMUD_API_URL: https://api.dev.erpcorporativo.shop
+      GMUD_ENVIRONMENT: HML
     steps:
+      - uses: actions/checkout@v4
+
+      - name: GMUD - deploy start
+        id: gmud_start
+        continue-on-error: true
+        run: |
+          if [ -z "${{ secrets.GMUD_DEPLOY_TOKEN }}" ]; then
+            echo "GMUD_NOTIFY=true" >> "$GITHUB_ENV"
+            echo "GMUD_NOTIFY_MSG=GMUD_DEPLOY_TOKEN não configurado no GitHub" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          SHA="${{ needs.build-and-push.outputs.sha_short }}"
+          PAYLOAD=$(jq -n \
+            --arg env "$GMUD_ENVIRONMENT" \
+            --arg title "Deploy HML ${GITHUB_REF_NAME}@${SHA}" \
+            --arg version "$SHA" \
+            --arg artifact "ghcr.io/${{ github.repository_owner }}/erpcorporativo-api:hml-${SHA}" \
+            --arg runId "${{ github.run_id }}" \
+            --arg sha "$SHA" \
+            --arg comment "GitHub Actions deploy-hml" \
+            '{environment: $env, title: $title, version: $version, artifact: $artifact, pipelineRunId: $runId, commitSha: $sha, comment: $comment}')
+          HTTP=$(curl -sS -o /tmp/gmud-start.json -w "%{http_code}" -X POST \
+            "${GMUD_API_URL}/api/internal/gmud/deploy-events/start" \
+            -H "X-Deploy-Token: ${{ secrets.GMUD_DEPLOY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" || echo "000")
+          if [ "$HTTP" != "200" ]; then
+            echo "GMUD_NOTIFY=true" >> "$GITHUB_ENV"
+            echo "GMUD_NOTIFY_MSG=Falha ao registrar início GMUD (HTTP ${HTTP})" >> "$GITHUB_ENV"
+          else
+            CHANGE_ID=$(jq -r '.changeId // empty' /tmp/gmud-start.json)
+            echo "change_id=${CHANGE_ID}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: GMUD - Telegram aviso (start)
+        if: env.GMUD_NOTIFY == 'true'
+        uses: ./.github/actions/telegram-notify
+        with:
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          status: failure
+          title: "GMUD HML — aviso"
+          message: "${{ env.GMUD_NOTIFY_MSG }}"
+
       - name: SSH deploy
+        id: ssh_deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -193,6 +241,59 @@ jobs:
             done
             docker compose up -d --remove-orphans
             docker image prune -f
+
+      - name: GMUD - deploy success
+        if: steps.ssh_deploy.outcome == 'success'
+        continue-on-error: true
+        run: |
+          if [ -z "${{ secrets.GMUD_DEPLOY_TOKEN }}" ]; then exit 0; fi
+          SHA="${{ needs.build-and-push.outputs.sha_short }}"
+          CHANGE_ID="${{ steps.gmud_start.outputs.change_id }}"
+          PAYLOAD=$(jq -n \
+            --arg env "$GMUD_ENVIRONMENT" \
+            --argjson changeId "${CHANGE_ID:-null}" \
+            --arg runId "${{ github.run_id }}" \
+            --arg sha "$SHA" \
+            --arg comment "Deploy HML concluído" \
+            '{environment: $env, changeId: $changeId, pipelineRunId: $runId, commitSha: $sha, comment: $comment}')
+          HTTP=$(curl -sS -o /tmp/gmud-success.json -w "%{http_code}" -X POST \
+            "${GMUD_API_URL}/api/internal/gmud/deploy-events/success" \
+            -H "X-Deploy-Token: ${{ secrets.GMUD_DEPLOY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" || echo "000")
+          if [ "$HTTP" != "200" ]; then
+            echo "GMUD_NOTIFY=true" >> "$GITHUB_ENV"
+            echo "GMUD_NOTIFY_MSG=Falha ao registrar sucesso GMUD (HTTP ${HTTP})" >> "$GITHUB_ENV"
+          fi
+
+      - name: GMUD - Telegram aviso (success)
+        if: env.GMUD_NOTIFY == 'true' && steps.ssh_deploy.outcome == 'success'
+        uses: ./.github/actions/telegram-notify
+        with:
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          status: failure
+          title: "GMUD HML — aviso"
+          message: "${{ env.GMUD_NOTIFY_MSG }}"
+
+      - name: GMUD - deploy failure
+        if: failure()
+        continue-on-error: true
+        run: |
+          if [ -z "${{ secrets.GMUD_DEPLOY_TOKEN }}" ]; then exit 0; fi
+          SHA="${{ needs.build-and-push.outputs.sha_short }}"
+          CHANGE_ID="${{ steps.gmud_start.outputs.change_id }}"
+          PAYLOAD=$(jq -n \
+            --arg env "$GMUD_ENVIRONMENT" \
+            --argjson changeId "${CHANGE_ID:-null}" \
+            --arg runId "${{ github.run_id }}" \
+            --arg sha "$SHA" \
+            --arg comment "Falha no deploy HML (GitHub Actions)" \
+            '{environment: $env, changeId: $changeId, pipelineRunId: $runId, commitSha: $sha, comment: $comment}')
+          curl -sS -X POST "${GMUD_API_URL}/api/internal/gmud/deploy-events/failure" \
+            -H "X-Deploy-Token: ${{ secrets.GMUD_DEPLOY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" || true
 
   # ----------------------------------------------------------
   notify-result:

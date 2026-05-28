@@ -1,0 +1,55 @@
+<div class="container-fluid dashboard-container">
+  <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
+    <a routerLink="/gmud" class="btn btn-sm btn-light"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="fw-bold text-dark mb-0">Nova GMUD</h4>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="erro">{{ erro }}</div>
+
+  <div class="card premium-card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">Título *</label>
+          <input class="form-control" [(ngModel)]="form.title" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" [(ngModel)]="form.type">
+            <option *ngFor="let t of types" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Ambiente</label>
+          <select class="form-select" [(ngModel)]="form.environment">
+            <option *ngFor="let e of envs" [value]="e">{{ e }}</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Risco</label>
+          <select class="form-select" [(ngModel)]="form.riskLevel">
+            <option *ngFor="let r of risks" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Descrição</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="form.description"></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Impacto</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="form.impactDescription"></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Plano de rollback *</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="form.rollbackPlan"></textarea>
+        </div>
+      </div>
+      <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-primary rounded-pill px-4" [disabled]="salvando" (click)="salvar()">
+          {{ salvando ? 'Salvando...' : 'Criar GMUD' }}
+        </button>
+        <a routerLink="/gmud" class="btn btn-outline-secondary rounded-pill">Cancelar</a>
+      </div>
+    </div>
+  </div>
+</div>

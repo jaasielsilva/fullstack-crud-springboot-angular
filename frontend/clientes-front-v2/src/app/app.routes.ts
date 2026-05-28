@@ -17,6 +17,9 @@ import { PagamentoFalhaComponent } from './pages/pagamento/pagamento-falha.compo
 import { PagamentoPendenteComponent } from './pages/pagamento/pagamento-pendente.component';
 import { TrialExpiradoComponent } from './pages/trial-expirado/trial-expirado.component';
 import { AdminAssinantesComponent } from './pages/admin/assinantes/admin-assinantes.component';
+import { GmudListComponent } from './pages/gmud/gmud-list/gmud-list.component';
+import { GmudFormComponent } from './pages/gmud/gmud-form/gmud-form.component';
+import { GmudDetailComponent } from './pages/gmud/gmud-detail/gmud-detail.component';
 import { authGuard } from './security/auth.guard';
 import { subscriptionGuard } from './security/subscription.guard';
 import { adminGuard } from './security/admin.guard';
@@ -91,6 +94,21 @@ export const routes: Routes = [
   {
     path: 'admin/assinantes',
     component: AdminAssinantesComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
+  },
+  {
+    path: 'gmud',
+    component: GmudListComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
+  },
+  {
+    path: 'gmud/nova',
+    component: GmudFormComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
+  },
+  {
+    path: 'gmud/:id',
+    component: GmudDetailComponent,
     canActivate: [authGuard, subscriptionGuard, adminGuard]
   },
   {

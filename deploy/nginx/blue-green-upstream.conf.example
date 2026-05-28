@@ -1,0 +1,31 @@
+# ============================================================
+# Blue/Green — EXEMPLO (não aplicar em produção nesta entrega)
+#
+# Objetivo: preparar troca de upstream sem derrubar o proxy Nginx.
+# Portas atuais do LexCRM permanecem 9101–9104 (rolling deploy).
+#
+# Futuro: API PROD blue em 9103, green em 9105 (exemplo).
+# Troca: alterar symlink active_upstream e: nginx -t && nginx -s reload
+# ============================================================
+
+upstream api_prod_blue {
+    server 127.0.0.1:9103;
+    keepalive 32;
+}
+
+upstream api_prod_green {
+    # Reservado para entrega futura — não configurar na VPS ainda
+    server 127.0.0.1:9105;
+    keepalive 32;
+}
+
+# Incluir no server block de api.erpcorporativo.shop:
+#   include /etc/nginx/snippets/erpcorporativo-api-upstream.conf;
+#
+# O snippet ativo aponta para blue OU green:
+#   proxy_pass http://api_prod_blue;
+
+# map $host $api_prod_upstream {
+#     default api_prod_blue;
+# }
+# proxy_pass http://$api_prod_upstream;
