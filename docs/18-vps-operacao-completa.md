@@ -153,6 +153,38 @@ curl -s http://127.0.0.1:9101/actuator/health
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
+## 9.1 Timezone padrão (America/Sao_Paulo)
+
+Para manter backend, logs e auditoria no mesmo horário local:
+
+1. No host da VPS, garanta timezone do sistema:
+
+```bash
+timedatectl
+sudo timedatectl set-timezone America/Sao_Paulo
+timedatectl
+```
+
+2. Defina `APP_TIMEZONE=America/Sao_Paulo` nos arquivos:
+   - `/opt/erpcorporativo/hml/.env`
+   - `/opt/erpcorporativo/prod/.env`
+3. Recrie os containers da API:
+
+```bash
+cd /opt/erpcorporativo/hml
+docker compose up -d --force-recreate api-hml
+
+cd /opt/erpcorporativo/prod
+docker compose up -d --force-recreate api-prod
+```
+
+4. Valide timezone dentro do container:
+
+```bash
+docker compose exec api-hml sh -lc 'date && echo "APP_TIMEZONE=$APP_TIMEZONE"'
+docker compose exec api-prod sh -lc 'date && echo "APP_TIMEZONE=$APP_TIMEZONE"'
+```
+
 ---
 
 ## 10. Documentação relacionada
