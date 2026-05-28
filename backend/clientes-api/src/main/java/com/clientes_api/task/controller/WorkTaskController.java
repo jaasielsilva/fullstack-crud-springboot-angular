@@ -3,6 +3,7 @@ package com.clientes_api.task.controller;
 import com.clientes_api.dto.PageResponseDTO;
 import com.clientes_api.task.dto.CreateWorkTaskDTO;
 import com.clientes_api.task.dto.LinkGmudDTO;
+import com.clientes_api.task.dto.PendingTasksResponseDTO;
 import com.clientes_api.task.dto.WorkTaskResponseDTO;
 import com.clientes_api.task.enums.TaskStatus;
 import com.clientes_api.task.service.WorkTaskService;
@@ -30,6 +31,13 @@ public class WorkTaskController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return workTaskService.listar(status, page, size);
+    }
+
+    @GetMapping("/pending/me")
+    @PreAuthorize("hasRole('ADMIN')")
+    public PendingTasksResponseDTO listarPendentesDoUsuario(
+            @RequestParam(defaultValue = "10") int limit) {
+        return workTaskService.listarPendentesDoUsuarioLogado(limit);
     }
 
     @GetMapping("/{id}")

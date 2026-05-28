@@ -23,6 +23,7 @@ import { GmudDetailComponent } from './pages/gmud/gmud-detail/gmud-detail.compon
 import { TaskListComponent } from './pages/tarefas/task-list/task-list.component';
 import { TaskFormComponent } from './pages/tarefas/task-form/task-form.component';
 import { TaskDetailComponent } from './pages/tarefas/task-detail/task-detail.component';
+import { FluxoMudancaComponent } from './pages/fluxo-mudanca/fluxo-mudanca.component';
 import { authGuard } from './security/auth.guard';
 import { subscriptionGuard } from './security/subscription.guard';
 import { adminGuard } from './security/admin.guard';
@@ -127,6 +128,11 @@ export const routes: Routes = [
   {
     path: 'tarefas/:id',
     component: TaskDetailComponent,
+    canActivate: [authGuard, subscriptionGuard, adminGuard]
+  },
+  {
+    path: 'fluxo-mudanca',
+    component: FluxoMudancaComponent,
     canActivate: [authGuard, subscriptionGuard, adminGuard]
   },
   {

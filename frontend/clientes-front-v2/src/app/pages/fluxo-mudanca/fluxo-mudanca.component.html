@@ -1,0 +1,108 @@
+<div class="container-fluid dashboard-container">
+  <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-2">
+    <i class="bi bi-map fs-4 text-primary"></i>
+    <h4 class="fw-bold text-dark mb-0">Fluxo de mudança (do código à produção)</h4>
+  </div>
+
+  <div class="alert border-0 shadow-sm mb-4" [class.alert-info]="appTier === 'HML'" [class.alert-danger]="appTier === 'PROD'">
+    <div class="d-flex flex-wrap align-items-start gap-2">
+      <i class="bi bi-pin-map-fill fs-5"></i>
+      <div>
+        <strong>Você está neste site agora: {{ appTier === 'HML' ? 'Homologação' : 'Produção' }}</strong>
+        <p class="small mb-2 mt-1">
+          API desta tela: <code>{{ apiHint }}</code>.
+          HML e PROD têm <strong>bancos de dados separados</strong> — o que você cria aqui não aparece automaticamente no outro ambiente.
+        </p>
+        <div class="d-flex flex-wrap gap-2 small">
+          <span class="badge bg-dark">HML: <a class="text-white" [href]="hmlUrl" target="_blank" rel="noopener">{{ hmlUrl }}</a></span>
+          <span class="badge bg-danger">PROD: <a class="text-white" [href]="prodUrl" target="_blank" rel="noopener">{{ prodUrl }}</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card premium-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="fw-bold text-info">Homologação (HML)</h6>
+          <ul class="small text-muted mb-0 ps-3">
+            <li><strong>Tarefas</strong> — planejar e concluir trabalho</li>
+            <li><strong>GMUD HML</strong> — criada pelo CI ao subir <code>dev</code></li>
+            <li><strong>Rascunho GMUD PROD</strong> — opcional, só no banco HML</li>
+            <li>Branch Git: <code>dev</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card premium-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="fw-bold text-dark">GitHub</h6>
+          <ul class="small text-muted mb-0 ps-3">
+            <li>Código-fonte e branches</li>
+            <li>Push <code>dev</code> → Deploy HML</li>
+            <li>Merge <code>main</code> → Deploy PROD</li>
+            <li>Release/tag no pipeline de PROD</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card premium-card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="fw-bold text-danger">Produção (PROD)</h6>
+          <ul class="small text-muted mb-0 ps-3">
+            <li><strong>GMUD real</strong> — criada pelo CI; você aprova aqui</li>
+            <li>Usuários finais do ERP</li>
+            <li>Branch Git: <code>main</code></li>
+            <li>Tarefas <em>não</em> existem neste banco (por enquanto)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card premium-card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+    <div class="card-body">
+      <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb me-1"></i> Regra de ouro</h6>
+      <p class="mb-0 small text-muted">
+        <strong>Tarefa</strong> = o que você vai fazer (sempre em HML).
+        <strong>GMUD em HML com ambiente PROD</strong> = rascunho de planejamento (opcional).
+        <strong>GMUD em Produção</strong> = a que o pipeline espera para liberar o deploy após você clicar em Aprovar.
+        São registros diferentes, em bancos diferentes.
+      </p>
+    </div>
+  </div>
+
+  <h5 class="fw-bold mb-3">Os 10 passos</h5>
+  <div class="accordion" id="fluxoAccordion">
+    <div class="accordion-item border-0 shadow-sm mb-2 rounded overflow-hidden" *ngFor="let step of steps">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+          [attr.data-bs-target]="'#step-' + step.order" aria-expanded="false">
+          <span class="badge bg-secondary me-2">{{ step.order }}</span>
+          {{ step.title }}
+          <span class="badge rounded-pill ms-2" [ngClass]="locationBadge[step.location]">
+            {{ locationLabel[step.location] }}
+          </span>
+        </button>
+      </h2>
+      <div [id]="'step-' + step.order" class="accordion-collapse collapse" data-bs-parent="#fluxoAccordion">
+        <div class="accordion-body small text-muted">
+          <p class="mb-2"><strong>{{ step.summary }}</strong></p>
+          <p class="mb-0">{{ step.detail }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card premium-card border-0 shadow-sm mt-4">
+    <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+      <span class="small text-muted me-2">Atalhos:</span>
+      <a routerLink="/tarefas" class="btn btn-sm btn-primary rounded-pill">Tarefas</a>
+      <a routerLink="/gmud" class="btn btn-sm btn-outline-primary rounded-pill">GMUD / Deploy</a>
+      <a routerLink="/tarefas/nova" class="btn btn-sm btn-outline-secondary rounded-pill">Nova tarefa</a>
+    </div>
+  </div>
+</div>

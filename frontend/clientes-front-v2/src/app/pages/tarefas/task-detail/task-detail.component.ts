@@ -5,11 +5,12 @@ import { TaskService } from '../../../services/task.service';
 import { GmudService } from '../../../services/gmud.service';
 import { TaskStatus, WorkTask } from '../../../models/task/work-task.model';
 import { ChangeRequest } from '../../../models/gmud/change-request.model';
+import { TaskFlowPanelComponent } from '../../../shared/deploy-flow/task-flow-panel.component';
 
 @Component({
   selector: 'app-task-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, TaskFlowPanelComponent],
   templateUrl: './task-detail.component.html',
   styleUrl: './task-detail.component.css'
 })

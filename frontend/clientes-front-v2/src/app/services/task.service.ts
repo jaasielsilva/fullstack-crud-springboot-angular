@@ -3,13 +3,23 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { PageResponse } from '../models/page-response.model';
-import { CreateWorkTask, TaskStatus, WorkTask } from '../models/task/work-task.model';
+import {
+  CreateWorkTask,
+  PendingTasksResponse,
+  TaskStatus,
+  WorkTask
+} from '../models/task/work-task.model';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
   private readonly apiUrl = `${environment.apiUrl}/api/tasks`;
 
   constructor(private http: HttpClient) {}
+
+  listarPendentesMinhas(limit = 10): Observable<PendingTasksResponse> {
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http.get<PendingTasksResponse>(`${this.apiUrl}/pending/me`, { params });
+  }
 
   listar(status?: TaskStatus, page = 0, size = 10): Observable<PageResponse<WorkTask>> {
     let params = new HttpParams().set('page', String(page)).set('size', String(size));
