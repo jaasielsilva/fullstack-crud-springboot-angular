@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -21,6 +21,7 @@ export class TaskNotificationsBellComponent implements OnInit {
   tasks: WorkTask[] = [];
   carregando = false;
   erro = '';
+  menuAberto = false;
 
   private readonly refreshMs = 60_000;
 
@@ -29,6 +30,23 @@ export class TaskNotificationsBellComponent implements OnInit {
     interval(this.refreshMs)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.carregar());
+  }
+
+  @HostListener('document:click')
+  fecharAoClicarFora(): void {
+    this.menuAberto = false;
+  }
+
+  alternarMenu(event: Event): void {
+    event.stopPropagation();
+    this.menuAberto = !this.menuAberto;
+    if (this.menuAberto) {
+      this.carregar();
+    }
+  }
+
+  fecharMenu(): void {
+    this.menuAberto = false;
   }
 
   carregar(): void {
