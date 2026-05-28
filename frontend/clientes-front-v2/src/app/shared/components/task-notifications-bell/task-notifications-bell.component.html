@@ -1,0 +1,58 @@
+<div class="dropdown task-notifications-dropdown">
+  <button
+    type="button"
+    class="btn btn-light position-relative rounded-circle p-0 d-flex align-items-center justify-content-center task-bell-btn"
+    data-bs-toggle="dropdown"
+    data-bs-auto-close="outside"
+    aria-expanded="false"
+    aria-label="Tarefas pendentes"
+    title="Tarefas pendentes"
+    (click)="carregar()"
+  >
+    <i class="bi bi-bell text-secondary"></i>
+    <span
+      *ngIf="pendingCount > 0"
+      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger task-bell-badge"
+    >
+      {{ pendingCount > 99 ? '99+' : pendingCount }}
+    </span>
+  </button>
+
+  <div class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 task-notifications-menu">
+    <div class="dropdown-header d-flex justify-content-between align-items-center py-2">
+      <span class="fw-bold small">Minhas tarefas pendentes</span>
+      <span *ngIf="pendingCount > 0" class="badge bg-danger rounded-pill">{{ pendingCount }}</span>
+    </div>
+
+    <div *ngIf="carregando" class="px-3 py-3 text-muted small text-center">Carregando...</div>
+
+    <div *ngIf="!carregando && erro" class="px-3 py-2 text-danger small">{{ erro }}</div>
+
+    <div *ngIf="!carregando && !erro && tasks.length === 0" class="px-3 py-3 text-muted small text-center">
+      Nenhuma tarefa pendente.
+    </div>
+
+    <div *ngIf="!carregando && tasks.length > 0" class="task-notifications-list">
+      <a
+        *ngFor="let t of tasks"
+        [routerLink]="['/tarefas', t.id]"
+        class="dropdown-item py-2 task-notification-item"
+      >
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="min-w-0">
+            <div class="fw-semibold small text-truncate">#{{ t.id }} — {{ t.title }}</div>
+            <div class="text-muted" style="font-size: 0.7rem;">{{ t.branchName || '—' }}</div>
+          </div>
+          <span class="badge rounded-pill flex-shrink-0" [ngClass]="badgeClass(t.status)">
+            {{ labelStatus(t.status) }}
+          </span>
+        </div>
+      </a>
+    </div>
+
+    <div class="dropdown-divider my-1" *ngIf="!carregando"></div>
+    <a routerLink="/tarefas" class="dropdown-item py-2 small fw-semibold text-center text-primary">
+      Ver todas as tarefas
+    </a>
+  </div>
+</div>
