@@ -1,0 +1,24 @@
+<div class="container-fluid dashboard-container">
+  <div class="mb-3">
+    <a routerLink="/tarefas" class="text-decoration-none small"><i class="bi bi-arrow-left"></i> Voltar</a>
+    <h4 class="fw-bold mt-2">Nova tarefa</h4>
+    <p class="text-muted small mb-0">Descreva o trabalho antes de abrir a branch e a GMUD de produção.</p>
+  </div>
+
+  <div class="card premium-card border-0 shadow-sm">
+    <div class="card-body">
+      <div *ngIf="erro" class="alert alert-danger py-2">{{ erro }}</div>
+      <div class="mb-3">
+        <label class="form-label">Título *</label>
+        <input class="form-control" [(ngModel)]="form.title" maxlength="255" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Descrição</label>
+        <textarea class="form-control" rows="5" [(ngModel)]="form.description"></textarea>
+      </div>
+      <button class="btn btn-primary rounded-pill px-4" [disabled]="salvando" (click)="salvar()">
+        {{ salvando ? 'Salvando...' : 'Criar tarefa' }}
+      </button>
+    </div>
+  </div>
+</div>

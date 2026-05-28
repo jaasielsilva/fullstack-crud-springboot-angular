@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { GmudService } from '../../../services/gmud.service';
 import {
   ChangeType,
@@ -22,11 +22,14 @@ export class GmudFormComponent {
     title: '',
     description: '',
     type: 'NORMAL',
-    environment: 'HML',
+    environment: 'PROD',
     riskLevel: 'MEDIUM',
     impactDescription: '',
-    rollbackPlan: ''
+    rollbackPlan: '',
+    taskId: null
   };
+
+  taskIdVinculada: number | null = null;
 
   readonly types: ChangeType[] = ['NORMAL', 'EMERGENCY', 'STANDARD'];
   readonly envs: DeployEnvironment[] = ['DEV', 'HML', 'PROD'];
@@ -35,7 +38,21 @@ export class GmudFormComponent {
   salvando = false;
   erro = '';
 
-  constructor(private gmudService: GmudService, private router: Router) {}
+  constructor(
+    private gmudService: GmudService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
+    const taskId = Number(this.route.snapshot.queryParamMap.get('taskId'));
+    const title = this.route.snapshot.queryParamMap.get('title');
+    if (taskId) {
+      this.taskIdVinculada = taskId;
+      this.form.taskId = taskId;
+    }
+    if (title) {
+      this.form.title = title;
+    }
+  }
 
   salvar(): void {
     if (!this.form.title?.trim()) {

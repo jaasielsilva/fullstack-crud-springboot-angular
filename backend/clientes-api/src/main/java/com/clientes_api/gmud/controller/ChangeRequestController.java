@@ -29,9 +29,10 @@ public class ChangeRequestController {
     public PageResponseDTO<ChangeRequestResponseDTO> listar(
             @RequestParam(required = false) ChangeStatus status,
             @RequestParam(required = false) DeployEnvironment environment,
+            @RequestParam(required = false) Long taskId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return changeRequestService.listar(status, environment, page, size);
+        return changeRequestService.listar(status, environment, taskId, page, size);
     }
 
     @GetMapping("/{id}")

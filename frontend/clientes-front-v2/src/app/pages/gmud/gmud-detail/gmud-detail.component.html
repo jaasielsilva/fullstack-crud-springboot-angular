@@ -27,6 +27,10 @@
             <dd class="col-sm-8 text-break">{{ change.artifact || '—' }}</dd>
             <dt class="col-sm-4">Pipeline</dt>
             <dd class="col-sm-8">{{ change.pipelineRunId || '—' }}</dd>
+            <dt class="col-sm-4" *ngIf="change.taskId">Tarefa</dt>
+            <dd class="col-sm-8" *ngIf="change.taskId">
+              <a [routerLink]="['/tarefas', change.taskId]">#{{ change.taskId }}</a>
+            </dd>
             <dt class="col-sm-4">Rollback plan</dt>
             <dd class="col-sm-8">{{ change.rollbackPlan }}</dd>
           </dl>
