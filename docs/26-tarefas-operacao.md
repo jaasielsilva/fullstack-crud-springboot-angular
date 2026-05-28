@@ -4,6 +4,8 @@ Módulo de **Tarefas** (super admin, `tenantId = 1`) para organizar o trabalho *
 
 **Guia visual na aplicação:** menu **Fluxo de mudança** (`/fluxo-mudanca`) e painel no detalhe de cada tarefa.
 
+**Produção:** menu **Tarefas** e sino da topbar ficam ocultos (`deployTier=PROD`). Planejamento em HML; aprovação de mudança em PROD via **GMUD**.
+
 ## Fluxo recomendado
 
 1. **Nova tarefa** (`/tarefas/nova`) → status `OPEN`, branch sugerida `feature/TASK-{id}-{slug}`.

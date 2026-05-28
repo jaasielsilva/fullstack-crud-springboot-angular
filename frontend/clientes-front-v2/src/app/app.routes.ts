@@ -27,6 +27,7 @@ import { FluxoMudancaComponent } from './pages/fluxo-mudanca/fluxo-mudanca.compo
 import { authGuard } from './security/auth.guard';
 import { subscriptionGuard } from './security/subscription.guard';
 import { adminGuard } from './security/admin.guard';
+import { tasksHmlOnlyGuard } from './security/tasks-hml-only.guard';
 
 const ROLES_DASHBOARD = ['ADMIN', 'GERENTE', 'VENDEDOR', 'SUPORTE'];
 
@@ -118,17 +119,17 @@ export const routes: Routes = [
   {
     path: 'tarefas',
     component: TaskListComponent,
-    canActivate: [authGuard, subscriptionGuard, adminGuard]
+    canActivate: [authGuard, subscriptionGuard, adminGuard, tasksHmlOnlyGuard]
   },
   {
     path: 'tarefas/nova',
     component: TaskFormComponent,
-    canActivate: [authGuard, subscriptionGuard, adminGuard]
+    canActivate: [authGuard, subscriptionGuard, adminGuard, tasksHmlOnlyGuard]
   },
   {
     path: 'tarefas/:id',
     component: TaskDetailComponent,
-    canActivate: [authGuard, subscriptionGuard, adminGuard]
+    canActivate: [authGuard, subscriptionGuard, adminGuard, tasksHmlOnlyGuard]
   },
   {
     path: 'fluxo-mudanca',
