@@ -49,6 +49,12 @@
             </a>
           </li>
           <li class="nav-item" *ngIf="canAccessSuperAdmin()">
+            <a routerLink="/tarefas" routerLinkActive="active" class="nav-link">
+              <i class="bi bi-kanban"></i>
+              Tarefas
+            </a>
+          </li>
+          <li class="nav-item" *ngIf="canAccessSuperAdmin()">
             <a routerLink="/gmud" routerLinkActive="active" class="nav-link">
               <i class="bi bi-arrow-repeat"></i>
               GMUD / Deploy

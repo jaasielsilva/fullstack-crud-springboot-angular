@@ -15,6 +15,7 @@ import com.clientes_api.gmud.model.ChangeRequest;
 import com.clientes_api.gmud.repository.ChangeLogRepository;
 import com.clientes_api.gmud.repository.ChangeRequestRepository;
 import com.clientes_api.gmud.support.SuperAdminSupport;
+import com.clientes_api.task.repository.WorkTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,9 @@ class ChangeRequestCicdServiceTest {
     @Mock
     private ChangeLogRepository changeLogRepository;
 
+    @Mock
+    private WorkTaskRepository workTaskRepository;
+
     private ChangeRequestService changeRequestService;
     private ChangeRequestCicdService cicdService;
 
@@ -42,7 +46,7 @@ class ChangeRequestCicdServiceTest {
     void setUp() {
         SuperAdminSupport superAdminSupport = org.mockito.Mockito.mock(SuperAdminSupport.class);
         changeRequestService = new ChangeRequestService(
-                changeRequestRepository, changeLogRepository, superAdminSupport);
+                changeRequestRepository, changeLogRepository, workTaskRepository, superAdminSupport);
         cicdService = new ChangeRequestCicdService(changeRequestRepository, changeRequestService, true);
 
         when(changeRequestRepository.save(any())).thenAnswer(inv -> {

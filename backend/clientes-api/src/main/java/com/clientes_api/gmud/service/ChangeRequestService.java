@@ -13,6 +13,7 @@ import com.clientes_api.gmud.model.ChangeRequest;
 import com.clientes_api.gmud.repository.ChangeLogRepository;
 import com.clientes_api.gmud.repository.ChangeRequestRepository;
 import com.clientes_api.gmud.support.SuperAdminSupport;
+import com.clientes_api.task.repository.WorkTaskRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,14 +29,17 @@ public class ChangeRequestService {
 
     private final ChangeRequestRepository changeRequestRepository;
     private final ChangeLogRepository changeLogRepository;
+    private final WorkTaskRepository workTaskRepository;
     private final SuperAdminSupport superAdminSupport;
 
     public ChangeRequestService(
             ChangeRequestRepository changeRequestRepository,
             ChangeLogRepository changeLogRepository,
+            WorkTaskRepository workTaskRepository,
             SuperAdminSupport superAdminSupport) {
         this.changeRequestRepository = changeRequestRepository;
         this.changeLogRepository = changeLogRepository;
+        this.workTaskRepository = workTaskRepository;
         this.superAdminSupport = superAdminSupport;
     }
 
@@ -45,12 +49,18 @@ public class ChangeRequestService {
     public PageResponseDTO<ChangeRequestResponseDTO> listar(
             ChangeStatus status,
             DeployEnvironment environment,
+            Long taskId,
             int page,
             int size) {
         superAdminSupport.assertSuperAdmin();
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int safePage = Math.max(page, 0);
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        if (taskId != null) {
+            return PageResponseDTO.from(changeRequestRepository.findByTaskIdOrderByCreatedAtDesc(taskId, pageable)
+                    .map(cr -> ChangeRequestMapper.toResponse(cr, List.of())));
+        }
 
         Page<ChangeRequest> result;
         if (status != null && environment != null) {
@@ -91,7 +101,23 @@ public class ChangeRequestService {
         entity.setStatus(ChangeStatus.OPEN);
         entity.setCreatedBy(superAdminSupport.currentUsername());
         entity.setCreatedAt(LocalDateTime.now());
+        if (dto.taskId() != null) {
+            entity.setTaskId(dto.taskId());
+            if (entity.getDescription() == null || entity.getDescription().isBlank()) {
+                entity.setDescription("Vinculada à Tarefa #" + dto.taskId());
+            } else if (!entity.getDescription().contains("Tarefa #" + dto.taskId())) {
+                entity.setDescription("Tarefa #" + dto.taskId() + " — " + entity.getDescription());
+            }
+        }
         entity = changeRequestRepository.save(entity);
+        if (dto.taskId() != null) {
+            Long changeId = entity.getId();
+            workTaskRepository.findById(dto.taskId()).ifPresent(task -> {
+                task.setLinkedChangeId(changeId);
+                task.setUpdatedAt(LocalDateTime.now());
+                workTaskRepository.save(task);
+            });
+        }
         appendLog(entity, null, ChangeStatus.OPEN, superAdminSupport.currentUsername(), "GMUD criada");
         return buscarPorId(entity.getId());
     }

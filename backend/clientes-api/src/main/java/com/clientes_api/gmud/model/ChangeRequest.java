@@ -70,4 +70,7 @@ public class ChangeRequest {
     private String pipelineRunId;
 
     private String commitSha;
+
+    @Column(name = "task_id")
+    private Long taskId;
 }

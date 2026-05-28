@@ -19,6 +19,7 @@ import com.clientes_api.gmud.model.ChangeRequest;
 import com.clientes_api.gmud.repository.ChangeLogRepository;
 import com.clientes_api.gmud.repository.ChangeRequestRepository;
 import com.clientes_api.gmud.support.SuperAdminSupport;
+import com.clientes_api.task.repository.WorkTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +45,9 @@ class ChangeRequestServiceTest {
 
     @Mock
     private ChangeLogRepository changeLogRepository;
+
+    @Mock
+    private WorkTaskRepository workTaskRepository;
 
     @Mock
     private SuperAdminSupport superAdminSupport;
@@ -75,7 +79,7 @@ class ChangeRequestServiceTest {
         when(changeRequestRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(change), Pageable.ofSize(10), 1));
 
-        var page = changeRequestService.listar(null, null, 0, 10);
+        var page = changeRequestService.listar(null, null, null, 0, 10);
 
         assertThat(page.content()).hasSize(1);
         assertThat(page.totalElements()).isEqualTo(1);
@@ -133,6 +137,7 @@ class ChangeRequestServiceTest {
                 RiskLevel.HIGH,
                 "impacto",
                 "rollback",
+                null,
                 null,
                 null
         );
