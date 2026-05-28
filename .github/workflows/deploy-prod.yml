@@ -172,21 +172,44 @@ jobs:
       GMUD_ENVIRONMENT: PROD
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag for commit
+        id: release_guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="$(git tag --points-at "${GITHUB_SHA}" | head -n1 || true)"
+          if [ -z "${TAG}" ]; then
+            echo "Nenhuma tag encontrada para o commit ${GITHUB_SHA}."
+            echo "Crie uma tag/release e rode o workflow novamente."
+            exit 1
+          fi
+          HTTP=$(curl -sS -o /tmp/release-check.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" || echo "000")
+          if [ "${HTTP}" != "200" ]; then
+            echo "Tag ${TAG} não possui GitHub Release publicado (HTTP ${HTTP})."
+            exit 1
+          fi
+          echo "release_tag=${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: GMUD - deploy start
         id: gmud_start
-        continue-on-error: true
         run: |
+          set -euo pipefail
           if [ -z "${{ secrets.GMUD_DEPLOY_TOKEN }}" ]; then
-            echo "GMUD_NOTIFY=true" >> "$GITHUB_ENV"
-            echo "GMUD_NOTIFY_MSG=GMUD_DEPLOY_TOKEN não configurado no GitHub" >> "$GITHUB_ENV"
-            exit 0
+            echo "GMUD_DEPLOY_TOKEN não configurado no GitHub."
+            exit 1
           fi
           SHA="${{ needs.build-and-push.outputs.sha_short }}"
           PAYLOAD=$(jq -n \
             --arg env "$GMUD_ENVIRONMENT" \
             --arg title "Deploy PROD ${GITHUB_REF_NAME}@${SHA}" \
-            --arg version "$SHA" \
+            --arg version "${{ steps.release_guard.outputs.release_tag }}" \
             --arg artifact "ghcr.io/${{ github.repository_owner }}/erpcorporativo-api:prod-${SHA}" \
             --arg runId "${{ github.run_id }}" \
             --arg sha "$SHA" \
@@ -198,22 +221,30 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$PAYLOAD" || echo "000")
           if [ "$HTTP" != "200" ]; then
-            echo "GMUD_NOTIFY=true" >> "$GITHUB_ENV"
-            echo "GMUD_NOTIFY_MSG=Falha ao registrar início GMUD PROD (HTTP ${HTTP})" >> "$GITHUB_ENV"
-          else
-            CHANGE_ID=$(jq -r '.changeId // empty' /tmp/gmud-start.json)
-            echo "change_id=${CHANGE_ID}" >> "$GITHUB_OUTPUT"
+            echo "Falha ao registrar início GMUD PROD (HTTP ${HTTP})."
+            exit 1
           fi
+          CHANGE_ID=$(jq -r '.changeId // empty' /tmp/gmud-start.json)
+          STATUS=$(jq -r '.status // empty' /tmp/gmud-start.json)
+          echo "change_id=${CHANGE_ID}" >> "$GITHUB_OUTPUT"
+          echo "gmud_status=${STATUS}" >> "$GITHUB_OUTPUT"
 
-      - name: GMUD - Telegram aviso (start)
-        if: env.GMUD_NOTIFY == 'true'
+      - name: GMUD - aguardando aprovação obrigatória
+        if: steps.gmud_start.outputs.gmud_status != 'APPROVED'
+        run: |
+          echo "GMUD #${{ steps.gmud_start.outputs.change_id }} está em '${{ steps.gmud_start.outputs.gmud_status }}'."
+          echo "Aprovação manual obrigatória para PROD. Aprove na UI e reexecute o workflow."
+          exit 1
+
+      - name: GMUD - Telegram gate (pending approval)
+        if: failure() && steps.gmud_start.outputs.gmud_status != 'APPROVED'
         uses: ./.github/actions/telegram-notify
         with:
           bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
           status: failure
-          title: "GMUD PROD — aviso"
-          message: "${{ env.GMUD_NOTIFY_MSG }}"
+          title: "GMUD PROD — aguardando aprovação"
+          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Status: ${{ steps.gmud_start.outputs.gmud_status }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Aprove na UI e reexecute o workflow."
 
       - name: SSH deploy
         id: ssh_deploy
