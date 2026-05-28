@@ -1,0 +1,31 @@
+.task-bell-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.task-bell-btn i {
+  font-size: 1.1rem;
+}
+
+.task-bell-badge {
+  font-size: 0.6rem;
+  min-width: 1.1rem;
+  padding: 0.2em 0.35em;
+}
+
+.task-notifications-menu {
+  width: min(320px, 92vw);
+  max-height: 360px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-notifications-list {
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+.task-notification-item:hover {
+  background: rgba(var(--bs-primary-rgb), 0.06);
+}

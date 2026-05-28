@@ -8,6 +8,7 @@ import com.clientes_api.gmud.repository.ChangeRequestRepository;
 import com.clientes_api.gmud.support.SuperAdminSupport;
 import com.clientes_api.task.dto.CreateWorkTaskDTO;
 import com.clientes_api.task.dto.LinkGmudDTO;
+import com.clientes_api.task.dto.PendingTasksResponseDTO;
 import com.clientes_api.task.dto.WorkTaskResponseDTO;
 import com.clientes_api.task.enums.TaskStatus;
 import com.clientes_api.task.model.WorkTask;
@@ -20,12 +21,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
+import java.util.List;
+
 import java.time.LocalDateTime;
 
 @Service
 public class WorkTaskService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_PENDING_LIST = 20;
+    private static final EnumSet<TaskStatus> PENDING_STATUSES = EnumSet.of(TaskStatus.OPEN, TaskStatus.IN_PROGRESS);
 
     private final WorkTaskRepository workTaskRepository;
     private final ChangeRequestRepository changeRequestRepository;
@@ -58,6 +64,21 @@ public class WorkTaskService {
     public WorkTaskResponseDTO buscarPorId(Long id) {
         superAdminSupport.assertSuperAdmin();
         return WorkTaskMapper.toResponse(findEntity(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PendingTasksResponseDTO listarPendentesDoUsuarioLogado(int limit) {
+        superAdminSupport.assertSuperAdmin();
+        String username = superAdminSupport.currentUsername();
+        int safeLimit = Math.min(Math.max(limit, 1), MAX_PENDING_LIST);
+        long count = workTaskRepository.countByCreatedByAndStatusIn(username, PENDING_STATUSES);
+        List<WorkTaskResponseDTO> tasks = workTaskRepository
+                .findByCreatedByAndStatusInOrderByUpdatedAtDescCreatedAtDesc(
+                        username, PENDING_STATUSES, PageRequest.of(0, safeLimit))
+                .stream()
+                .map(WorkTaskMapper::toResponse)
+                .toList();
+        return new PendingTasksResponseDTO(count, tasks);
     }
 
     @Transactional

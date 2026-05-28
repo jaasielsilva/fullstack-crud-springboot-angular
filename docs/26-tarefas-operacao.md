@@ -17,6 +17,7 @@ Módulo de **Tarefas** (super admin, `tenantId = 1`) para organizar o trabalho *
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
+| GET | `/api/tasks/pending/me?limit=10` | Tarefas pendentes (OPEN/IN_PROGRESS) do usuário logado — sino da topbar |
 | GET | `/api/tasks?page=0&size=10&status=` | Lista paginada |
 | GET | `/api/tasks/{id}` | Detalhe |
 | POST | `/api/tasks` | Criar |

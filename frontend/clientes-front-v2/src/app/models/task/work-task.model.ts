@@ -18,3 +18,8 @@ export interface CreateWorkTask {
   title: string;
   description?: string;
 }
+
+export interface PendingTasksResponse {
+  pendingCount: number;
+  tasks: WorkTask[];
+}

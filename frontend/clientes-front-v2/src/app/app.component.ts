@@ -3,11 +3,12 @@ import { RouterOutlet, RouterLink, Router, NavigationEnd } from '@angular/router
 import { CommonModule } from '@angular/common';
 import { AuthService } from './security/auth.service';
 import { TrialBannerComponent } from './shared/components/trial-banner/trial-banner.component';
+import { TaskNotificationsBellComponent } from './shared/components/task-notifications-bell/task-notifications-bell.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, CommonModule, TrialBannerComponent],
+  imports: [RouterOutlet, RouterLink, CommonModule, TrialBannerComponent, TaskNotificationsBellComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
