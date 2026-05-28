@@ -19,6 +19,11 @@ public class ChangeRequestCicdController {
         this.cicdService = cicdService;
     }
 
+    @GetMapping("/status/{pipelineRunId}")
+    public ResponseEntity<CicdDeployResponseDTO> status(@PathVariable String pipelineRunId) {
+        return ResponseEntity.ok(cicdService.getStatusByPipelineRunId(pipelineRunId));
+    }
+
     @PostMapping("/start")
     public ResponseEntity<CicdDeployResponseDTO> start(@Valid @RequestBody CicdDeployEventDTO event) {
         return ResponseEntity.ok(cicdService.onDeployStart(event));

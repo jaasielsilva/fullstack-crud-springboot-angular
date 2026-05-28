@@ -1,5 +1,6 @@
 package com.clientes_api.gmud.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,5 +45,25 @@ class ChangeRequestCicdControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.changeId").exists())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
+    }
+
+    @Test
+    void status_porPipelineRunId() throws Exception {
+        mockMvc.perform(post("/api/internal/gmud/deploy-events/start")
+                        .header("X-Deploy-Token", "test-gmud-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "environment": "PROD",
+                                  "title": "Deploy status test",
+                                  "pipelineRunId": "pipeline-it-status-001"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/internal/gmud/deploy-events/status/pipeline-it-status-001")
+                        .header("X-Deploy-Token", "test-gmud-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_APPROVAL"));
     }
 }

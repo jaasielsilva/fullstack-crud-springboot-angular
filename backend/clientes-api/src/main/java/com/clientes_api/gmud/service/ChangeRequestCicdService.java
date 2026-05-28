@@ -1,6 +1,7 @@
 package com.clientes_api.gmud.service;
 
 import com.clientes_api.exception.BusinessException;
+import com.clientes_api.exception.ResourceNotFoundException;
 import com.clientes_api.gmud.dto.CicdDeployEventDTO;
 import com.clientes_api.gmud.dto.CicdDeployResponseDTO;
 import com.clientes_api.gmud.enums.ChangeStatus;
@@ -57,6 +58,17 @@ public class ChangeRequestCicdService {
         }
 
         return new CicdDeployResponseDTO(entity.getId(), entity.getStatus(), "Deploy start registrado");
+    }
+
+    @Transactional(readOnly = true)
+    public CicdDeployResponseDTO getStatusByPipelineRunId(String pipelineRunId) {
+        if (!gmudEnabled) {
+            return new CicdDeployResponseDTO(null, null, "GMUD desabilitado");
+        }
+        ChangeRequest entity = changeRequestRepository.findByPipelineRunId(pipelineRunId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "GMUD não encontrada para pipeline " + pipelineRunId));
+        return new CicdDeployResponseDTO(entity.getId(), entity.getStatus(), "Status consultado");
     }
 
     @Transactional

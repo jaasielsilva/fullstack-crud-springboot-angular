@@ -170,6 +170,8 @@ jobs:
     env:
       GMUD_API_URL: https://api.erpcorporativo.shop
       GMUD_ENVIRONMENT: PROD
+      GMUD_APPROVAL_POLL_INTERVAL_SEC: 30
+      GMUD_APPROVAL_POLL_MAX_MINUTES: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -261,22 +263,74 @@ jobs:
           echo "change_id=${CHANGE_ID}" >> "$GITHUB_OUTPUT"
           echo "gmud_status=${STATUS}" >> "$GITHUB_OUTPUT"
 
-      - name: GMUD - aguardando aprovação obrigatória
+      - name: GMUD - Telegram aguardando aprovação
+        if: steps.gmud_start.outputs.gmud_status != 'APPROVED'
+        uses: ./.github/actions/telegram-notify
+        with:
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          status: start
+          title: "GMUD PROD — aguardando aprovação"
+          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Status: ${{ steps.gmud_start.outputs.gmud_status }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Pipeline aguarda até ${GMUD_APPROVAL_POLL_MAX_MINUTES} min."
+
+      - name: GMUD - aguardar aprovação (polling)
+        id: gmud_poll
         if: steps.gmud_start.outputs.gmud_status != 'APPROVED'
         run: |
-          echo "GMUD #${{ steps.gmud_start.outputs.change_id }} está em '${{ steps.gmud_start.outputs.gmud_status }}'."
-          echo "Aprovação manual obrigatória para PROD. Aprove na UI e reexecute o workflow."
+          set -euo pipefail
+          CHANGE_ID="${{ steps.gmud_start.outputs.change_id }}"
+          RUN_ID="${{ github.run_id }}"
+          MAX_SECONDS=$((GMUD_APPROVAL_POLL_MAX_MINUTES * 60))
+          ELAPSED=0
+          echo "GMUD #${CHANGE_ID} aguardando APPROVED (até ${GMUD_APPROVAL_POLL_MAX_MINUTES} min, intervalo ${GMUD_APPROVAL_POLL_INTERVAL_SEC}s)..."
+
+          POLL_PAYLOAD=$(jq -n \
+            --argjson changeId "${CHANGE_ID}" \
+            --arg env "$GMUD_ENVIRONMENT" \
+            --arg runId "${RUN_ID}" \
+            '{changeId: $changeId, environment: $env, pipelineRunId: $runId}')
+
+          while [ "${ELAPSED}" -lt "${MAX_SECONDS}" ]; do
+            HTTP=$(curl -sS -o /tmp/gmud-status.json -w "%{http_code}" \
+              "${GMUD_API_URL}/api/internal/gmud/deploy-events/status/${RUN_ID}" \
+              -H "X-Deploy-Token: ${{ secrets.GMUD_DEPLOY_TOKEN }}" || echo "000")
+            if [ "${HTTP}" != "200" ]; then
+              HTTP=$(curl -sS -o /tmp/gmud-status.json -w "%{http_code}" -X POST \
+                "${GMUD_API_URL}/api/internal/gmud/deploy-events/start" \
+                -H "X-Deploy-Token: ${{ secrets.GMUD_DEPLOY_TOKEN }}" \
+                -H "Content-Type: application/json" \
+                -d "${POLL_PAYLOAD}" || echo "000")
+            fi
+            if [ "${HTTP}" = "200" ]; then
+              STATUS=$(jq -r '.status // empty' /tmp/gmud-status.json)
+              echo "[${ELAPSED}s] Status GMUD #${CHANGE_ID}: ${STATUS}"
+              if [ "${STATUS}" = "APPROVED" ]; then
+                echo "gmud_status=APPROVED" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              if [ "${STATUS}" = "ROLLBACK" ] || [ "${STATUS}" = "DEPLOYED" ]; then
+                echo "GMUD em status inesperado para deploy: ${STATUS}"
+                exit 1
+              fi
+            else
+              echo "[${ELAPSED}s] Falha ao consultar status (HTTP ${HTTP})."
+            fi
+            sleep "${GMUD_APPROVAL_POLL_INTERVAL_SEC}"
+            ELAPSED=$((ELAPSED + GMUD_APPROVAL_POLL_INTERVAL_SEC))
+          done
+
+          echo "Timeout: GMUD #${CHANGE_ID} não aprovada em ${GMUD_APPROVAL_POLL_MAX_MINUTES} minutos."
           exit 1
 
-      - name: GMUD - Telegram gate (pending approval)
-        if: failure() && steps.gmud_start.outputs.gmud_status != 'APPROVED'
+      - name: GMUD - Telegram timeout aprovação
+        if: failure() && steps.gmud_poll.outcome == 'failure'
         uses: ./.github/actions/telegram-notify
         with:
           bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
           status: failure
-          title: "GMUD PROD — aguardando aprovação"
-          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Status: ${{ steps.gmud_start.outputs.gmud_status }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Aprove na UI e reexecute o workflow."
+          title: "GMUD PROD — timeout de aprovação"
+          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Aprovação não recebida em ${GMUD_APPROVAL_POLL_MAX_MINUTES} min. Reexecute o workflow após aprovar."
 
       - name: SSH deploy
         id: ssh_deploy
