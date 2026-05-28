@@ -1,8 +1,9 @@
 import { environment } from '../../../environments/environment';
+import { DeployTier } from '../../../environments/environment.types';
 import { ChangeRequest } from '../../models/gmud/change-request.model';
-import { TaskStatus, WorkTask } from '../../models/task/work-task.model';
+import { WorkTask } from '../../models/task/work-task.model';
 
-export type DeployTier = 'HML' | 'PROD';
+export type { DeployTier };
 
 export function currentDeployTier(): DeployTier {
   if (environment.deployTier === 'PROD' || environment.deployTier === 'HML') {

@@ -24,7 +24,5 @@ export class FluxoMudancaComponent {
   readonly hmlUrl = environment.hmlAppUrl;
   readonly prodUrl = environment.prodAppUrl;
   readonly apiHint =
-    environment.deployTier === 'PROD'
-      ? 'api.erpcorporativo.shop'
-      : 'api.dev.erpcorporativo.shop';
+    this.appTier === 'PROD' ? 'api.erpcorporativo.shop' : 'api.dev.erpcorporativo.shop';
 }

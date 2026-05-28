@@ -1,6 +1,8 @@
-export const environment = {
+import { AppEnvironment } from './environment.types';
+
+export const environment: AppEnvironment = {
   production: false,
-  deployTier: 'HML' as const,
+  deployTier: 'HML',
   hmlAppUrl: 'https://dev.erpcorporativo.shop',
   prodAppUrl: 'https://erpcorporativo.shop',
   apiUrl: 'http://localhost:8080',
