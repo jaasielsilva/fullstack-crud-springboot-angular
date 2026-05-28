@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { PageResponse } from '../models/page-response.model';
 import {
   ChangeRequest,
   ChangeStatus,
@@ -15,11 +16,18 @@ export class GmudService {
 
   constructor(private http: HttpClient) {}
 
-  listar(status?: ChangeStatus, environment?: DeployEnvironment): Observable<ChangeRequest[]> {
-    let params = new HttpParams();
+  listar(
+    status?: ChangeStatus,
+    environment?: DeployEnvironment,
+    page = 0,
+    size = 10
+  ): Observable<PageResponse<ChangeRequest>> {
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('size', String(size));
     if (status) params = params.set('status', status);
     if (environment) params = params.set('environment', environment);
-    return this.http.get<ChangeRequest[]>(this.apiUrl, { params });
+    return this.http.get<PageResponse<ChangeRequest>>(this.apiUrl, { params });
   }
 
   buscar(id: number): Observable<ChangeRequest> {

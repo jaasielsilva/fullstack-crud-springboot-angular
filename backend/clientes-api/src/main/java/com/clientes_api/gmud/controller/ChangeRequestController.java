@@ -1,5 +1,6 @@
 package com.clientes_api.gmud.controller;
 
+import com.clientes_api.dto.PageResponseDTO;
 import com.clientes_api.gmud.dto.ChangeRequestResponseDTO;
 import com.clientes_api.gmud.dto.CreateChangeRequestDTO;
 import com.clientes_api.gmud.dto.StatusTransitionDTO;
@@ -11,8 +12,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Tag(name = "GMUD", description = "Gestão de mudanças (plataforma)")
 @RestController
@@ -27,10 +26,12 @@ public class ChangeRequestController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<ChangeRequestResponseDTO> listar(
+    public PageResponseDTO<ChangeRequestResponseDTO> listar(
             @RequestParam(required = false) ChangeStatus status,
-            @RequestParam(required = false) DeployEnvironment environment) {
-        return changeRequestService.listar(status, environment);
+            @RequestParam(required = false) DeployEnvironment environment,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return changeRequestService.listar(status, environment, page, size);
     }
 
     @GetMapping("/{id}")
