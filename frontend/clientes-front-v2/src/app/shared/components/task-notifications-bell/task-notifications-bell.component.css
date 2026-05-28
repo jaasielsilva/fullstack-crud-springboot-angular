@@ -1,3 +1,7 @@
+.task-notifications-dropdown {
+  position: relative;
+}
+
 .task-bell-btn {
   width: 32px;
   height: 32px;
@@ -13,12 +17,18 @@
   padding: 0.2em 0.35em;
 }
 
+/* Fechado por padrão — display:flex no menu base quebrava o dropdown do Bootstrap */
 .task-notifications-menu {
+  display: none;
   width: min(320px, 92vw);
   max-height: 360px;
   overflow: hidden;
-  display: flex;
   flex-direction: column;
+  z-index: 1050;
+}
+
+.task-notifications-menu.show {
+  display: flex;
 }
 
 .task-notifications-list {

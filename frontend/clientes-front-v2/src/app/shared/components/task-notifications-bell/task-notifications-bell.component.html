@@ -1,13 +1,11 @@
-<div class="dropdown task-notifications-dropdown">
+<div class="dropdown task-notifications-dropdown" (click)="$event.stopPropagation()">
   <button
     type="button"
     class="btn btn-light position-relative rounded-circle p-0 d-flex align-items-center justify-content-center task-bell-btn"
-    data-bs-toggle="dropdown"
-    data-bs-auto-close="outside"
-    aria-expanded="false"
+    [attr.aria-expanded]="menuAberto"
     aria-label="Tarefas pendentes"
     title="Tarefas pendentes"
-    (click)="carregar()"
+    (click)="alternarMenu($event)"
   >
     <i class="bi bi-bell text-secondary"></i>
     <span
@@ -18,7 +16,10 @@
     </span>
   </button>
 
-  <div class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 task-notifications-menu">
+  <div
+    class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 task-notifications-menu"
+    [class.show]="menuAberto"
+  >
     <div class="dropdown-header d-flex justify-content-between align-items-center py-2">
       <span class="fw-bold small">Minhas tarefas pendentes</span>
       <span *ngIf="pendingCount > 0" class="badge bg-danger rounded-pill">{{ pendingCount }}</span>
@@ -37,6 +38,7 @@
         *ngFor="let t of tasks"
         [routerLink]="['/tarefas', t.id]"
         class="dropdown-item py-2 task-notification-item"
+        (click)="fecharMenu()"
       >
         <div class="d-flex justify-content-between align-items-start gap-2">
           <div class="min-w-0">
@@ -51,7 +53,11 @@
     </div>
 
     <div class="dropdown-divider my-1" *ngIf="!carregando"></div>
-    <a routerLink="/tarefas" class="dropdown-item py-2 small fw-semibold text-center text-primary">
+    <a
+      routerLink="/tarefas"
+      class="dropdown-item py-2 small fw-semibold text-center text-primary"
+      (click)="fecharMenu()"
+    >
       Ver todas as tarefas
     </a>
   </div>
