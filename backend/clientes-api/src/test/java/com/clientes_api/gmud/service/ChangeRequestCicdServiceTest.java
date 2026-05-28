@@ -119,4 +119,25 @@ class ChangeRequestCicdServiceTest {
 
         assertThat(response.status()).isEqualTo(ChangeStatus.DEPLOYED);
     }
+
+    @Test
+    void onDeploySuccess_prod_aprovado_marcaDeployed() {
+        ChangeRequest existing = new ChangeRequest();
+        existing.setId(7L);
+        existing.setTitle("Deploy PROD aprovado");
+        existing.setType(ChangeType.NORMAL);
+        existing.setEnvironment(DeployEnvironment.PROD);
+        existing.setRiskLevel(RiskLevel.HIGH);
+        existing.setRollbackPlan("rollback");
+        existing.setStatus(ChangeStatus.APPROVED);
+        existing.setCreatedBy("system:ci");
+
+        when(changeRequestRepository.findByPipelineRunId("run-prod-approved"))
+                .thenReturn(Optional.of(existing));
+
+        var response = cicdService.onDeploySuccess(new CicdDeployEventDTO(
+                null, DeployEnvironment.PROD, null, null, null, "run-prod-approved", null, "ok"));
+
+        assertThat(response.status()).isEqualTo(ChangeStatus.DEPLOYED);
+    }
 }

@@ -127,6 +127,7 @@ A aplicação roda em **containers**; em produção/homologação o **TLS** é t
 - **Guia completo de infra:** [`deploy/README.md`](deploy/README.md)  
 - **Credenciais de bootstrap** (super admin inicial em banco vazio): mesma página, seção **9) Credenciais de bootstrap**  
 - **Workflows:** `.github/workflows/ci.yml` (CI em PR/push), `deploy-hml.yml`, `deploy-prod.yml`
+- **Gate obrigatório de PROD (`main`):** deploy só executa com **GitHub Release** para a tag do commit e **GMUD em `APPROVED`**; sem isso o workflow falha antes do SSH deploy.
 
 ---
 

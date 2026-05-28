@@ -73,7 +73,7 @@ Documento executável no repositório. Marque `- [x]` conforme concluir cada ite
 
 - [x] Secret `GMUD_DEPLOY_TOKEN` documentado
 - [x] `deploy-hml.yml` — steps GMUD + Telegram em falha
-- [x] `deploy-prod.yml` — idem
+- [x] `deploy-prod.yml` — gate obrigatório (Release + GMUD `APPROVED`)
 - [x] `deploy/hml/docker-compose.yml` + `.env.example`
 - [x] `deploy/prod/docker-compose.yml` + `.env.example`
 

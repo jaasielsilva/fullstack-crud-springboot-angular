@@ -23,14 +23,17 @@ Gestão de mudanças (ITIL básico) para rastrear deploys HML/PROD integrados ao
 
 ## Fluxo PROD (aprovação manual)
 
-1. Pipeline chama `start` → GMUD fica em `IN_APPROVAL`.
-2. Super admin aprova na UI (`POST /api/gmud/changes/{id}/approve`) → `APPROVED`.
-3. Pipeline `success` só marca `DEPLOYED` se já `APPROVED`.
-4. Falha de deploy → `failure` → `ROLLBACK`.
+1. Pipeline valida se o commit possui **tag com GitHub Release**; sem release, o job falha.
+2. Pipeline chama `start` → GMUD fica em `IN_APPROVAL`.
+3. Super admin aprova na UI (`POST /api/gmud/changes/{id}/approve`) → `APPROVED`.
+4. O job de deploy só continua se a GMUD vier como `APPROVED`; caso contrário falha com aviso no Telegram.
+5. Pipeline `success` marca `DEPLOYED`.
+6. Falha de deploy → `failure` → `ROLLBACK`.
 
 ## Falha do curl GMUD
 
-O deploy **não é interrompido**. O workflow usa `continue-on-error: true` e envia **Telegram** com título de aviso.
+- **HML (`deploy-hml`)**: deploy **não é interrompido**; o workflow usa `continue-on-error: true` e envia aviso no Telegram.
+- **PROD (`deploy-prod`)**: GMUD faz parte do gate obrigatório; erro de registro/validação bloqueia o deploy.
 
 ## Health / rollback
 
