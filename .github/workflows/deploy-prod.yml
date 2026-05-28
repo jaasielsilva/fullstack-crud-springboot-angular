@@ -293,14 +293,25 @@ jobs:
             --arg sha "$SHA" \
             --arg comment "Deploy PROD concluído (requer GMUD APPROVED)" \
             '{environment: $env, changeId: $changeId, pipelineRunId: $runId, commitSha: $sha, comment: $comment}')
-          HTTP=$(curl -sS -o /tmp/gmud-success.json -w "%{http_code}" -X POST \
-            "${GMUD_API_URL}/api/internal/gmud/deploy-events/success" \
-            -H "X-Deploy-Token: ${{ secrets.GMUD_DEPLOY_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD" || echo "000")
+          HTTP="000"
+          for attempt in 1 2 3 4 5; do
+            HTTP=$(curl -sS -o /tmp/gmud-success.json -w "%{http_code}" -X POST \
+              "${GMUD_API_URL}/api/internal/gmud/deploy-events/success" \
+              -H "X-Deploy-Token: ${{ secrets.GMUD_DEPLOY_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" || echo "000")
+            if [ "$HTTP" = "200" ]; then
+              echo "GMUD success registrado na tentativa ${attempt}."
+              break
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "Falha ao registrar sucesso GMUD (HTTP ${HTTP}) na tentativa ${attempt}/5. Aguardando 10s..."
+              sleep 10
+            fi
+          done
           if [ "$HTTP" != "200" ]; then
             echo "GMUD_NOTIFY=true" >> "$GITHUB_ENV"
-            echo "GMUD_NOTIFY_MSG=Falha ao registrar sucesso GMUD PROD (HTTP ${HTTP}). Aprove a GMUD na UI se necessário." >> "$GITHUB_ENV"
+            echo "GMUD_NOTIFY_MSG=Falha ao registrar sucesso GMUD PROD (HTTP ${HTTP}) após 5 tentativas. Aprove a GMUD na UI se necessário." >> "$GITHUB_ENV"
           fi
 
       - name: GMUD - Telegram aviso (success)
