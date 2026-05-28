@@ -49,3 +49,12 @@ Nesta entrega apenas documentação: [deploy/nginx/blue-green-upstream.conf.exam
 Antes do primeiro deploy com `JPA_DDL_AUTO=validate`, executar:
 
 `deploy/sql/V1__gmud_tables.sql`
+
+## Governança v2.0
+
+Para o modelo empresarial completo (RACI, playbook, checklists e KPIs), consulte:
+
+- [22-gmud-governanca-empresarial-v2.md](22-gmud-governanca-empresarial-v2.md)
+- [23-gmud-playbook-operacional-v2.md](23-gmud-playbook-operacional-v2.md)
+- [24-gmud-checklists-e-templates-v2.md](24-gmud-checklists-e-templates-v2.md)
+- [25-gmud-kpis-e-metas-v2.md](25-gmud-kpis-e-metas-v2.md)

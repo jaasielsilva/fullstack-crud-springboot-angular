@@ -145,6 +145,10 @@ A aplicação roda em **containers**; em produção/homologação o **TLS** é t
 | [`docs/09-docker-deploy.md`](docs/09-docker-deploy.md) | Docker e deploy |
 | [`docs/20-gmud-plano-implementacao.md`](docs/20-gmud-plano-implementacao.md) | Plano passo a passo — módulo GMUD / deploy |
 | [`docs/21-gmud-operacao.md`](docs/21-gmud-operacao.md) | GMUD — tokens, fluxo HML/PROD, rollback |
+| [`docs/22-gmud-governanca-empresarial-v2.md`](docs/22-gmud-governanca-empresarial-v2.md) | Governança empresarial de mudança (RACI, políticas) |
+| [`docs/23-gmud-playbook-operacional-v2.md`](docs/23-gmud-playbook-operacional-v2.md) | Playbook operacional completo de execução |
+| [`docs/24-gmud-checklists-e-templates-v2.md`](docs/24-gmud-checklists-e-templates-v2.md) | Checklists e templates oficiais |
+| [`docs/25-gmud-kpis-e-metas-v2.md`](docs/25-gmud-kpis-e-metas-v2.md) | KPIs, metas e melhoria contínua |
 | Demais arquivos | Produtos, pedidos, dashboard, usuários, financeiro, backup, VPS, etc. |
 
 ---

@@ -36,6 +36,8 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      TZ: ${APP_TIMEZONE:-America/Sao_Paulo}
+      APP_TIMEZONE: ${APP_TIMEZONE:-America/Sao_Paulo}
       DB_HOST: mysql-prod
       DB_PORT: 3306
       DB_NAME: ${DB_NAME}

@@ -153,6 +153,38 @@ curl -s http://127.0.0.1:9101/actuator/health
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
+## 9.1 Timezone padrão (America/Sao_Paulo)
+
+Para manter backend, logs e auditoria no mesmo horário local:
+
+1. No host da VPS, garanta timezone do sistema:
+
+```bash
+timedatectl
+sudo timedatectl set-timezone America/Sao_Paulo
+timedatectl
+```
+
+2. Defina `APP_TIMEZONE=America/Sao_Paulo` nos arquivos:
+   - `/opt/erpcorporativo/hml/.env`
+   - `/opt/erpcorporativo/prod/.env`
+3. Recrie os containers da API:
+
+```bash
+cd /opt/erpcorporativo/hml
+docker compose up -d --force-recreate api-hml
+
+cd /opt/erpcorporativo/prod
+docker compose up -d --force-recreate api-prod
+```
+
+4. Valide timezone dentro do container:
+
+```bash
+docker compose exec api-hml sh -lc 'date && echo "APP_TIMEZONE=$APP_TIMEZONE"'
+docker compose exec api-prod sh -lc 'date && echo "APP_TIMEZONE=$APP_TIMEZONE"'
+```
+
 ---
 
 ## 10. Documentação relacionada
@@ -162,6 +194,11 @@ sudo nginx -t && sudo systemctl reload nginx
 | [`deploy/README.md`](../deploy/README.md) | DNS, VPS, stacks, troubleshooting |
 | [`deploy/nginx/README.md`](../deploy/nginx/README.md) | Nginx + Certbot na VPS com outros sites |
 | [`README.md`](../README.md) (raiz) | Visão geral do projeto e link para deploy |
+| [`21-gmud-operacao.md`](21-gmud-operacao.md) | Operação GMUD no dia a dia |
+| [`22-gmud-governanca-empresarial-v2.md`](22-gmud-governanca-empresarial-v2.md) | Governança corporativa de mudança |
+| [`23-gmud-playbook-operacional-v2.md`](23-gmud-playbook-operacional-v2.md) | Playbook operacional ponta a ponta |
+| [`24-gmud-checklists-e-templates-v2.md`](24-gmud-checklists-e-templates-v2.md) | Checklists e templates oficiais |
+| [`25-gmud-kpis-e-metas-v2.md`](25-gmud-kpis-e-metas-v2.md) | KPIs, metas e revisão mensal |
 
 ---
 
