@@ -9,7 +9,7 @@
     </a>
   </div>
 
-  <div class="alert border-0 shadow-sm mb-3 py-2" [class.alert-danger]="appTier === 'PROD'" [class.alert-info]="appTier === 'HML'">
+  <div *ngIf="showEducation" class="alert border-0 shadow-sm mb-3 py-2 alert-info">
     <p class="small mb-1">
       <strong>Você está em {{ appTier === 'PROD' ? 'Produção' : 'Homologação' }}.</strong>
       Cada ambiente tem <strong>banco de dados próprio</strong> — GMUDs criadas em
@@ -40,7 +40,12 @@
       <button class="btn btn-sm btn-outline-secondary" (click)="carregar()">
         <i class="bi bi-arrow-clockwise"></i> Atualizar
       </button>
-      <button type="button" class="btn btn-sm btn-link" (click)="filtroStatus = ''; filtroEnv = ''; onFiltroChange()">
+      <button
+        *ngIf="showEducation"
+        type="button"
+        class="btn btn-sm btn-link"
+        (click)="filtroStatus = ''; filtroEnv = ''; onFiltroChange()"
+      >
         Limpar filtros
       </button>
     </div>
