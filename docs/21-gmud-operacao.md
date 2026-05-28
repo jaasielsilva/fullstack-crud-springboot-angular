@@ -23,7 +23,7 @@ Gestão de mudanças (ITIL básico) para rastrear deploys HML/PROD integrados ao
 
 ## Fluxo PROD (aprovação manual)
 
-1. Pipeline valida se o commit possui **tag com GitHub Release**; sem release, o job falha.
+1. Pipeline garante **tag semver + GitHub Release** no commit de `main` (cria automaticamente `vX.Y.Z` patch se não existir; tag manual no commit é respeitada).
 2. Pipeline chama `start` → GMUD fica em `IN_APPROVAL`.
 3. Super admin aprova na UI (`POST /api/gmud/changes/{id}/approve`) → `APPROVED`.
 4. O job de deploy só continua se a GMUD vier como `APPROVED`; caso contrário falha com aviso no Telegram.
