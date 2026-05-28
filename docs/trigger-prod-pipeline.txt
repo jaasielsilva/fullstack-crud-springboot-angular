@@ -1,0 +1,2 @@
+Trigger manual da esteira de PRODUCAO (main).
+Arquivo criado para validar o fluxo GMUD + Release gate.
