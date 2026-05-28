@@ -103,4 +103,8 @@ Documento executável no repositório. Marque `- [x]` conforme concluir cada ite
 ## Referências
 
 - Operação: [21-gmud-operacao.md](21-gmud-operacao.md)
+- Governança v2.0: [22-gmud-governanca-empresarial-v2.md](22-gmud-governanca-empresarial-v2.md)
+- Playbook: [23-gmud-playbook-operacional-v2.md](23-gmud-playbook-operacional-v2.md)
+- Checklists e templates: [24-gmud-checklists-e-templates-v2.md](24-gmud-checklists-e-templates-v2.md)
+- KPIs: [25-gmud-kpis-e-metas-v2.md](25-gmud-kpis-e-metas-v2.md)
 - API Swagger: `/swagger-ui` tag **GMUD**
