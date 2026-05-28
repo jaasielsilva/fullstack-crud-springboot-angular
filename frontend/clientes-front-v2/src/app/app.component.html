@@ -62,7 +62,7 @@
               Fluxo de mudança
             </a>
           </li>
-          <li class="nav-item" *ngIf="canAccessSuperAdmin()">
+          <li class="nav-item" *ngIf="showTasksInUi()">
             <a routerLink="/tarefas" routerLinkActive="active" class="nav-link">
               <i class="bi bi-kanban"></i>
               Tarefas
@@ -136,7 +136,7 @@
         </div>
 
         <div class="d-flex align-items-center gap-3">
-          <app-task-notifications-bell *ngIf="canAccessSuperAdmin()"></app-task-notifications-bell>
+          <app-task-notifications-bell *ngIf="showTasksInUi()"></app-task-notifications-bell>
 
           <div class="vr mx-1 bg-secondary opacity-25" style="height: 24px; align-self: center;"></div>
 

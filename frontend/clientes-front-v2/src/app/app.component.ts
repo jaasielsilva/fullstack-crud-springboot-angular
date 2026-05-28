@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from './security/auth.service';
 import { TrialBannerComponent } from './shared/components/trial-banner/trial-banner.component';
 import { TaskNotificationsBellComponent } from './shared/components/task-notifications-bell/task-notifications-bell.component';
+import { showTasksModuleInUi } from './shared/deploy-flow/platform-ops.context';
 
 @Component({
   selector: 'app-root',
@@ -64,5 +65,10 @@ export class AppComponent implements OnInit {
 
   canAccessSuperAdmin(): boolean {
     return this.authService.isSuperAdmin();
+  }
+
+  /** Tarefas e sino: somente homologação (PROD usa GMUD). */
+  showTasksInUi(): boolean {
+    return this.canAccessSuperAdmin() && showTasksModuleInUi();
   }
 }
