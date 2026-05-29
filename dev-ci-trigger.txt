@@ -1,4 +1,0 @@
-Arquivo para disparar a esteira (GitHub Actions / CI) na branch dev.
-Pode editar esta linha ou o timestamp abaixo e fazer push de novo quando precisar reexecutar o pipeline.
-
-last-touch: 2026-05-14
