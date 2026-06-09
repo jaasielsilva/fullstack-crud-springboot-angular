@@ -8,6 +8,20 @@
       <p class="text-muted">Acesso ao Sistema Corporativo</p>
     </div>
 
+    <div class="alert alert-info border-0 py-3 mb-4" *ngIf="mostrarAvisoSafari">
+      <div class="d-flex align-items-start">
+        <i class="bi bi-phone me-2 mt-1"></i>
+        <div class="small">
+          <strong>iPhone:</strong> para instalar o app (PWA) e aprovar GMUD, use o <strong>Safari</strong>.
+          <ol class="mb-2 mt-2 ps-3">
+            <li>No Telegram: segure o link → <strong>Abrir no Safari</strong></li>
+            <li>Ou copie a URL abaixo e cole no Safari</li>
+          </ol>
+          <code class="d-block text-break user-select-all">{{ urlAtual }}</code>
+        </div>
+      </div>
+    </div>
+
     <!-- Mensagem de Erro (Se houver) -->
     <div class="alert alert-danger border-0 py-2 d-flex align-items-center mb-4" *ngIf="mensagemErro">
       <i class="bi bi-exclamation-circle-fill me-2"></i>

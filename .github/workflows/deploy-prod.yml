@@ -272,7 +272,7 @@ jobs:
           chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
           status: start
           title: "GMUD PROD — aguardando aprovação"
-          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Status: ${{ steps.gmud_start.outputs.gmud_status }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Pipeline aguarda até ${GMUD_APPROVAL_POLL_MAX_MINUTES} min. Faça login como super admin e toque no link abaixo."
+          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Status: ${{ steps.gmud_start.outputs.gmud_status }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Pipeline aguarda até ${GMUD_APPROVAL_POLL_MAX_MINUTES} min. iPhone: segure o link e escolha Abrir no Safari (PWA nao funciona no Chrome)."
           link_url: ${{ env.GMUD_APP_URL }}/gmud/${{ steps.gmud_start.outputs.change_id }}
           link_label: "Aprovar GMUD #${{ steps.gmud_start.outputs.change_id }}"
 

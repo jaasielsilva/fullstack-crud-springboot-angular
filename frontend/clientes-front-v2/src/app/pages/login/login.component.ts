@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -12,7 +12,7 @@ import { HttpErrorResponse } from '@angular/common/http';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   loginData = {
     login: '',
     senha: ''
@@ -20,12 +20,27 @@ export class LoginComponent {
 
   carregando = false;
   mensagemErro = '';
+  /** iPhone abrindo no Chrome (Telegram/navegador padrão) — PWA exige Safari. */
+  mostrarAvisoSafari = false;
+  urlAtual = '';
 
   constructor(
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
+
+  ngOnInit(): void {
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/i.test(ua);
+    const chromeIos = /CriOS/i.test(ua);
+    const standalone =
+      ('standalone' in navigator &&
+        (navigator as Navigator & { standalone?: boolean }).standalone) ||
+      window.matchMedia('(display-mode: standalone)').matches;
+    this.mostrarAvisoSafari = ios && chromeIos && !standalone;
+    this.urlAtual = window.location.href;
+  }
 
   entrar(): void {
     if (!this.loginData.login || !this.loginData.senha) {
