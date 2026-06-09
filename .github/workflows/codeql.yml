@@ -35,7 +35,6 @@ jobs:
         with:
           languages: java-kotlin
           build-mode: manual
-          paths: backend/clientes-api
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -67,7 +66,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
-          paths: frontend/clientes-front-v2
+          config: |
+            paths:
+              - frontend/clientes-front-v2
 
       - name: Setup Node 20
         uses: actions/setup-node@v4
