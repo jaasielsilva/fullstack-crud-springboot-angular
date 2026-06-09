@@ -1,0 +1,151 @@
+# Dependabot — atualizações de dependências via PR em dev.
+# Fluxo: PR → CI → merge em dev → deploy HML → validação → promote para main/PROD.
+#
+# Habilitar também em Settings → Security → Code security and analysis:
+#   - Dependabot alerts
+#   - Dependabot security updates
+#   - Dependency review (se disponível no plano)
+# ============================================================
+
+version: 2
+
+updates:
+  # ----------------------------------------------------------
+  # Frontend — Angular / npm
+  # ----------------------------------------------------------
+  - package-ecosystem: npm
+    directory: /frontend/clientes-front-v2
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: dev
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: deps(frontend)
+      include: scope
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+      npm-production:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      npm-development:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "@angular/*"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@angular-devkit/*"
+        update-types:
+          - version-update:semver-major
+
+  # ----------------------------------------------------------
+  # Backend — Spring Boot / Maven
+  # ----------------------------------------------------------
+  - package-ecosystem: maven
+    directory: /backend/clientes-api
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: dev
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: deps(backend)
+      include: scope
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework:*"
+      maven-runtime:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      maven-development:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: org.springframework.boot:spring-boot-starter-parent
+        update-types:
+          - version-update:semver-major
+
+  # ----------------------------------------------------------
+  # Docker — imagens base (API)
+  # ----------------------------------------------------------
+  - package-ecosystem: docker
+    directory: /backend/clientes-api
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: dev
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+      - backend
+    commit-message:
+      prefix: deps(docker-api)
+
+  # ----------------------------------------------------------
+  # Docker — imagens base (Web)
+  # ----------------------------------------------------------
+  - package-ecosystem: docker
+    directory: /frontend/clientes-front-v2
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: dev
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+      - frontend
+    commit-message:
+      prefix: deps(docker-web)
+
+  # ----------------------------------------------------------
+  # GitHub Actions — workflows de CI/CD
+  # ----------------------------------------------------------
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    target-branch: dev
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: deps(actions)
+    groups:
+      actions:
+        patterns:
+          - "actions/*"
+          - "docker/*"
