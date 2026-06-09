@@ -69,6 +69,9 @@ jobs:
           config: |
             paths:
               - frontend/clientes-front-v2
+            paths-ignore:
+              - frontend/clientes-front-v2/node_modules
+              - frontend/clientes-front-v2/dist
 
       - name: Setup Node 20
         uses: actions/setup-node@v4
