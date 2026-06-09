@@ -17,6 +17,14 @@ inputs:
     description: "Linhas adicionais (opcional)"
     required: false
     default: ""
+  link_url:
+    description: "URL opcional (ex.: tela GMUD no ERP)"
+    required: false
+    default: ""
+  link_label:
+    description: "Texto do link opcional"
+    required: false
+    default: "Abrir link"
 
 runs:
   using: "composite"
@@ -29,6 +37,8 @@ runs:
         STATUS: ${{ inputs.status }}
         TITLE: ${{ inputs.title }}
         EXTRA: ${{ inputs.message }}
+        LINK_URL: ${{ inputs.link_url }}
+        LINK_LABEL: ${{ inputs.link_label }}
         REPO: ${{ github.repository }}
         REF: ${{ github.ref_name }}
         SHA: ${{ github.sha }}
@@ -73,6 +83,10 @@ runs:
             printf '\n%s\n' "${SAFE_EXTRA}"
           fi
           printf '\n<a href="%s">Ver execução</a>\n' "${RUN_URL}"
+          if [ -n "${LINK_URL}" ]; then
+            SAFE_LINK_LABEL=$(esc "${LINK_LABEL}")
+            printf '<a href="%s">%s</a>\n' "${LINK_URL}" "${SAFE_LINK_LABEL}"
+          fi
         } > /tmp/tg-message.txt
 
         # Envia via JSON usando jq para gerar payload válido

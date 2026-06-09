@@ -169,6 +169,7 @@ jobs:
       url: https://erpcorporativo.shop
     env:
       GMUD_API_URL: https://api.erpcorporativo.shop
+      GMUD_APP_URL: https://erpcorporativo.shop
       GMUD_ENVIRONMENT: PROD
       GMUD_APPROVAL_POLL_INTERVAL_SEC: 30
       GMUD_APPROVAL_POLL_MAX_MINUTES: 15
@@ -271,7 +272,9 @@ jobs:
           chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
           status: start
           title: "GMUD PROD — aguardando aprovação"
-          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Status: ${{ steps.gmud_start.outputs.gmud_status }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Pipeline aguarda até ${GMUD_APPROVAL_POLL_MAX_MINUTES} min."
+          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Status: ${{ steps.gmud_start.outputs.gmud_status }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Pipeline aguarda até ${GMUD_APPROVAL_POLL_MAX_MINUTES} min. Faça login como super admin e toque no link abaixo."
+          link_url: ${{ env.GMUD_APP_URL }}/gmud/${{ steps.gmud_start.outputs.change_id }}
+          link_label: "Aprovar GMUD #${{ steps.gmud_start.outputs.change_id }}"
 
       - name: GMUD - aguardar aprovação (polling)
         id: gmud_poll
@@ -330,7 +333,9 @@ jobs:
           chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
           status: failure
           title: "GMUD PROD — timeout de aprovação"
-          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Aprovação não recebida em ${GMUD_APPROVAL_POLL_MAX_MINUTES} min. Reexecute o workflow após aprovar."
+          message: "Change: #${{ steps.gmud_start.outputs.change_id }} | Release: ${{ steps.release_guard.outputs.release_tag }}. Aprovação não recebida em ${GMUD_APPROVAL_POLL_MAX_MINUTES} min. Aprove na GMUD e reexecute o workflow."
+          link_url: ${{ env.GMUD_APP_URL }}/gmud/${{ steps.gmud_start.outputs.change_id }}
+          link_label: "Abrir GMUD #${{ steps.gmud_start.outputs.change_id }}"
 
       - name: SSH deploy
         id: ssh_deploy
