@@ -21,7 +21,7 @@ updates:
       time: "09:00"
       timezone: America/Sao_Paulo
     target-branch: dev
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
     labels:
       - dependencies
       - frontend
@@ -62,7 +62,7 @@ updates:
       time: "09:00"
       timezone: America/Sao_Paulo
     target-branch: dev
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - dependencies
       - backend
@@ -138,7 +138,7 @@ updates:
       time: "09:00"
       timezone: America/Sao_Paulo
     target-branch: dev
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - dependencies
       - github-actions
