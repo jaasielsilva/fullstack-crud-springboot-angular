@@ -20,7 +20,7 @@ RUN npx ng build --configuration=${BUILD_CONFIG}
 # ============================================================
 # Stage 2: Nginx servindo o bundle estático
 # ============================================================
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 
 # curl para HEALTHCHECK (wget não vem garantido na imagem slim)
 RUN apk add --no-cache curl
