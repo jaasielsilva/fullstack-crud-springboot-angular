@@ -50,6 +50,14 @@ updates:
       - dependency-name: "@angular-devkit/*"
         update-types:
           - version-update:semver-major
+      # Angular 17 exige zone.js ~0.14.x (peer de @angular/core)
+      - dependency-name: zone.js
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      - dependency-name: jasmine-core
+        update-types:
+          - version-update:semver-major
 
   # ----------------------------------------------------------
   # Backend — Spring Boot / Maven
