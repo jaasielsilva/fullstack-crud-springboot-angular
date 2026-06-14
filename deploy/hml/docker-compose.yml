@@ -35,6 +35,7 @@ services:
       mysql-hml:
         condition: service_healthy
     environment:
+      ENV: hml
       SPRING_PROFILES_ACTIVE: hml
       TZ: ${APP_TIMEZONE:-America/Sao_Paulo}
       APP_TIMEZONE: ${APP_TIMEZONE:-America/Sao_Paulo}

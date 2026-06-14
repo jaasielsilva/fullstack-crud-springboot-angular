@@ -60,7 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/abacatepay").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/datadog").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/api/internal/gmud/**").permitAll()
                         .anyRequest().authenticated()
                 )
