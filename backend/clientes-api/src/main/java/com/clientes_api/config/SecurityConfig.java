@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/datadog").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/internal/gmud/**").permitAll()
                         .requestMatchers("/api/internal/monitoring-test/**").permitAll()
                         .anyRequest().authenticated()
