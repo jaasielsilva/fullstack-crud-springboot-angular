@@ -77,6 +77,7 @@ services:
       TELEGRAM_SEND_TIMEOUT_MS: ${TELEGRAM_SEND_TIMEOUT_MS:-5000}
       GMUD_DEPLOY_TOKEN: ${GMUD_DEPLOY_TOKEN:-}
       GMUD_ENABLED: ${GMUD_ENABLED:-true}
+      MONITORING_TEST_SECRET: ${MONITORING_TEST_SECRET:-changeme-hml-only}
     networks:
       - internal-hml
     ports:

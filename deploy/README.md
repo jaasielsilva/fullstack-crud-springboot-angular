@@ -155,6 +155,33 @@ cd /opt/erpcorporativo/prod && docker compose logs -f api-prod
 
 Renovação SSL: o **Certbot** costuma instalar timer systemd (`certbot.timer`) — verifique com `systemctl list-timers | grep certbot`.
 
+### Teste de taxa de erro 5xx (monitoring, só HML)
+
+Endpoints internos em `/api/internal/monitoring-test/*` simulam HTTP 200 e 500 para validar alertas Prometheus. Protegidos por header `X-Monitoring-Test-Secret` (env `MONITORING_TEST_SECRET` no `.env` de HML). Não existem em produção.
+
+```bash
+NET=$(docker inspect api-hml --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}')
+SECRET="valor-do-MONITORING_TEST_SECRET"
+
+# Smoke test
+docker run --rm --network "$NET" curlimages/curl:8.5.0 -s \
+  -H "X-Monitoring-Test-Secret: $SECRET" \
+  http://api-hml:8080/api/internal/monitoring-test/ok
+
+# ~25% erro: 1 erro + 3 OK por ciclo
+while true; do
+  docker run --rm --network "$NET" curlimages/curl:8.5.0 -s -o /dev/null -w "err:%{http_code}\n" \
+    -H "X-Monitoring-Test-Secret: $SECRET" \
+    http://api-hml:8080/api/internal/monitoring-test/error
+  for i in 1 2 3; do
+    docker run --rm --network "$NET" curlimages/curl:8.5.0 -s -o /dev/null -w "ok:%{http_code}\n" \
+      -H "X-Monitoring-Test-Secret: $SECRET" \
+      http://api-hml:8080/api/internal/monitoring-test/ok
+  done
+  sleep 1
+done
+```
+
 ---
 
 ## 8) Solução de problemas

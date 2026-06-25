@@ -21,6 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.clientes_api.gmud.security.DeployTokenFilter;
+import com.clientes_api.monitoring.security.MonitoringTestSecretFilter;
 import com.clientes_api.security.SecurityFilter;
 import com.clientes_api.security.TenantAccessFilter;
 
@@ -38,11 +39,17 @@ public class SecurityConfig {
     @Autowired
     private DeployTokenFilter deployTokenFilter;
 
+    @Autowired(required = false)
+    private MonitoringTestSecretFilter monitoringTestSecretFilter;
+
     @Value("${app.cors.allowed-origins:https://erpcorporativo.shop,https://dev.erpcorporativo.shop,http://localhost:4200,http://127.0.0.1:4200}")
     private String allowedOriginsCsv;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        if (monitoringTestSecretFilter != null) {
+            httpSecurity.addFilterBefore(monitoringTestSecretFilter, UsernamePasswordAuthenticationFilter.class);
+        }
         return httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> {}) 
@@ -62,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/api/internal/gmud/**").permitAll()
+                        .requestMatchers("/api/internal/monitoring-test/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(deployTokenFilter, UsernamePasswordAuthenticationFilter.class)
