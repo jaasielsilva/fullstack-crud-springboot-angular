@@ -41,7 +41,7 @@ jobs:
     name: Notify start
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/telegram-notify
         with:
           bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -58,14 +58,14 @@ jobs:
     outputs:
       sha_short: ${{ steps.meta.outputs.sha_short }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set short SHA
         id: meta
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Prepare Buildx local cache dirs
         run: |
@@ -73,7 +73,7 @@ jobs:
           rm -rf "${{ env.BUILDX_CACHE_API_NEW }}" "${{ env.BUILDX_CACHE_WEB_NEW }}"
 
       - name: Restore Buildx cache (API, PROD)
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.BUILDX_CACHE_API }}
           key: buildx-prod-api
@@ -81,7 +81,7 @@ jobs:
             buildx-prod-api-
 
       - name: Restore Buildx cache (Web, PROD)
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.BUILDX_CACHE_WEB }}
           key: buildx-prod-web
@@ -89,14 +89,14 @@ jobs:
             buildx-prod-web-
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build & push API
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: backend/clientes-api
           file: backend/clientes-api/Dockerfile
@@ -119,13 +119,13 @@ jobs:
 
       - name: Save Buildx cache (API, PROD)
         if: success()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ${{ env.BUILDX_CACHE_API }}
           key: buildx-prod-api
 
       - name: Build & push Web
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: frontend/clientes-front-v2
           file: frontend/clientes-front-v2/Dockerfile
@@ -150,7 +150,7 @@ jobs:
 
       - name: Save Buildx cache (Web, PROD)
         if: success()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ${{ env.BUILDX_CACHE_WEB }}
           key: buildx-prod-web
@@ -174,7 +174,7 @@ jobs:
       GMUD_APPROVAL_POLL_INTERVAL_SEC: 30
       GMUD_APPROVAL_POLL_MAX_MINUTES: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -441,7 +441,7 @@ jobs:
     needs: [build-and-push, deploy]
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Compute status
         id: s
