@@ -21,7 +21,7 @@ RUN mvn -B -e -ntp clean package -DskipTests \
 # ============================================================
 # Stage 2: Runtime
 # ============================================================
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:22-jre-jammy
 
 # Create non-root user for security
 RUN groupadd -r spring && useradd -r -g spring spring \
